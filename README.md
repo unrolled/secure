@@ -1,8 +1,8 @@
-# secure
+# Secure
 
-Negroni middleware that helps enable some quick security wins.
+Secure is an http middleware for Go that facilitates some quick security wins.
 
-[API Reference](http://godoc.org/github.com/unrolled/negroni-secure)
+[API Reference](http://godoc.org/github.com/unrolled/secure)
 
 ## Usage
 
@@ -10,22 +10,19 @@ Negroni middleware that helps enable some quick security wins.
 package main
 
 import (
-  "fmt"
   "net/http"
 
-  "github.com/codegangsta/negroni"
-  "github.com/unrolled/negroni-secure/secure"
+  "github.com/unrolled/secure"
 )
 
-func main() {
-  mux := http.NewServeMux()
-  mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    fmt.Fprintf(w, "Welcome to the home page!")
-  })
+func myApp(w http.ResponseWriter, r *http.Request) {
+  w.Write([]byte("Hello world!"))
+}
 
-  n := negroni.Classic()
-  n.UseHandler(mux)
-  n.Use(secure.NewSecure(secure.Options{
+func main() {
+  myHandler := http.HandlerFunc(myApp)
+
+  secureMiddleware := secure.New(secure.Options{
     AllowedHosts: []string{"example.com", "ssl.example.com"},
     SSLRedirect: true,
     SSLHost: "ssl.example.com",
@@ -36,15 +33,17 @@ func main() {
     ContentTypeNosniff: true,
     BrowserXssFilter: true,
     ContentSecurityPolicy: "default-src 'self'",
-  }))
-  n.Run(":3000")
+  })
+
+  app := secureMiddleware.Handler(myHandler)
+  http.ListenAndServe("0.0.0.0:3000", app)
 }
 ```
 
-Make sure to include the secure middleware as close to the top as possible. It's best to do the allowed hosts and SSL check before anything else.
+Make sure to include the secure middleware as close to the top (beginning) as possible. It's best to do the allowed hosts and SSL check before anything else.
 
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not https, it will be redirected to https with the host name of 'ssl.example.com'.
-After this it will add the following headers:
+Once those requirments are satisfied, it will add the following headers:
 ```
 Strict-Transport-Security: 315360000; includeSubdomains
 X-Frame-Options: DENY
@@ -54,17 +53,18 @@ Content-Security-Policy: default-src 'self'
 ```
 
 ###Set the `IsDevelopment` option to `true` when developing.
-If you don't, the AllowedHosts, SSLRedirect, and STS Header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on http), or block `localhost` has a bad host.
+When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, and STS Header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on http), or block `localhost` has a bad host.
 
 
 ### Options
-`secure.Secure` comes with a variety of configuration options:
+`secure.Options` comes with a variety of configuration settings:
 
 ```go
 // ...
-n.Use(secure.NewSecure(secure.Options{
+secureMiddleware := secure.New(secure.Options{
   AllowedHosts: []string{"ssl.example.com"}, // AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
   SSLRedirect: true, // If SSLRedirect is set to true, then only allow https requests. Default is false.
+  SSLTemporaryRedirect: false, // If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
   SSLHost: "ssl.example.com", // SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
   SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"}, // SSLProxyHeaders is set of header keys with associated values that would indicate a valid https request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
   STSSeconds: 315360000, // STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
@@ -80,44 +80,72 @@ n.Use(secure.NewSecure(secure.Options{
 ```
 
 ### Redirecting HTTP to HTTPS
-If you want to redirect all http requests to https, you can use the following example. Note that the `martini.Env` needs to be in production, otherwise the redirect will not happen (see the `MARTINI_ENV` section above for other ways around this).
+If you want to redirect all http requests to https, you can use the following example.
 
 ```go
 package main
 
 import (
-  "fmt"
-  "log"
   "net/http"
 
-  "github.com/codegangsta/negroni"
-  "github.com/unrolled/negroni-secure/secure"
+  "github.com/unrolled/secure"
 )
 
-func main() {
-  mux := http.NewServeMux()
-  mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    fmt.Fprintf(w, "Welcome to the home page!")
-  })
+func myApp(w http.ResponseWriter, r *http.Request) {
+  w.Write([]byte("Hello world!"))
+}
 
-  n := negroni.Classic()
-  n.UseHandler(mux)
-  n.Use(secure.NewSecure(secure.Options{
+func main() {
+  myHandler := http.HandlerFunc(myApp)
+
+  secureMiddleware := secure.New(secure.Options{
     SSLRedirect:  true,
     SSLHost:      "localhost:8443",  // This is optional in production. The default behavior is to just redirect the request to the https protocol. Example: http://github.com/some_page would be redirected to https://github.com/some_page.
-  }))
+  })
 
+  app := secureMiddleware.Handler(myHandler)
 
   // HTTP
   go func() {
-    log.Fatal(http.ListenAndServe(":8080", n))
+    log.Fatal(http.ListenAndServe(":8080", app))
   }()
 
   // HTTPS
   // To generate a development cert and key, run the following from your *nix terminal:
   // go run $GOROOT/src/pkg/crypto/tls/generate_cert.go --host="localhost"
-  log.Fatal(http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", n))
+  log.Fatal(http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", app))
 }
+```
+
+### Negroni
+You can also use this middleware with [negroni](https://github.com/codegangsta/negroni), just wrap it in `negroni.HandlerFunc`:
+```go
+package main
+
+import (
+  "net/http"
+
+  "github.com/codegangsta/negroni"
+  "github.com/unrolled/secure"
+)
+
+func main() {
+  mux := http.NewServeMux()
+  mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+    w.Write([]byte("Welcome to the home page!"))
+  })
+
+  secureMiddleware := secure.New(secure.Options{
+    FrameDeny: true,
+  })
+
+  n := negroni.Classic()
+  n.Use(negroni.HandlerFunc(secureMiddleware.NegroniHandler))
+  n.UseHandler(mux)
+
+  n.Run("0.0.0.0:3000")
+}
+
 ```
 
 ### Nginx

@@ -1,29 +1,29 @@
-// Package secure is a middleware for Negroni that helps enable some quick security wins.
+// Secure is an http middleware for Go that facilitates some quick security wins.
 //
 // package main
 //
 // import (
-//   "fmt"
 //   "net/http"
 //
-//   "github.com/codegangsta/negroni"
-//   "github.com/unrolled/negroni-secure/secure"
+//   "github.com/unrolled/secure"
 // )
 //
+// func myApp(w http.ResponseWriter, r *http.Request) {
+//   w.Write([]byte("Hello world!"))
+// }
+//
 // func main() {
-//   mux := http.NewServeMux()
-//   mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-//     fmt.Fprintf(w, "Welcome to the home page!")
+//   myHandler := http.HandlerFunc(myApp)
+//
+//   secureMiddleware := secure.New(secure.Options{
+//     AllowedHosts: []string{"www.example.com", "sub.example.com"},
+//     SSLRedirect:  true,
 //   })
 //
-//   n := negroni.Classic()
-//   n.UseHandler(mux)
-//   n.Use(secure.NewSecure(secure.Options{
-//     AllowedHosts: []string{"www.example.com", "sub.example.com"},
-//     SSLRedirect: true,
-//   }))
-//   n.Run(":3000")
+//   app := secureMiddleware.Handler(myHandler)
+//   http.ListenAndServe("0.0.0.0:3000", app)
 // }
+
 package secure
 
 import (
@@ -44,12 +44,18 @@ const (
 	cspHeader           = "Content-Security-Policy"
 )
 
+func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Bad Host", http.StatusInternalServerError)
+}
+
 // Options is a struct for specifying configuration options for the secure.Secure middleware.
 type Options struct {
 	// AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
 	AllowedHosts []string
 	// If SSLRedirect is set to true, then only allow https requests. Default is false.
 	SSLRedirect bool
+	// If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
+	SSLTemporaryRedirect bool
 	// SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
 	SSLHost string
 	// SSLProxyHeaders is set of header keys with associated values that would indicate a valid https request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
@@ -76,19 +82,39 @@ type Options struct {
 // Secure is a middleware that helps setup a few basic security features. A single secure.Options struct can be
 // provided to configure which features should be enabled, and the ability to override a few of the default values.
 type Secure struct {
+	// Customize Secure with an Options struct.
 	opt Options
+
+	// Handlers for when an error occurs (ie bad host).
+	badHostHandler http.Handler
 }
 
-// NewSecure returns a new Secure instance.
-func NewSecure(opt Options) *Secure {
+// Constructs a new Secure instance with supplied options.
+func New(options Options) *Secure {
 	return &Secure{
-		opt: opt,
+		opt:            options,
+		badHostHandler: http.HandlerFunc(defaultBadHostHandler),
 	}
 }
 
-func (s *Secure) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func (s *Secure) Handler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Let secure process the request. If it returns an error,
+		// that indicates the request should not continue.
+		err := s.process(w, r)
+
+		// If there was an error, do not continue.
+		if err != nil {
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
+}
+
+func (s *Secure) process(w http.ResponseWriter, r *http.Request) error {
 	// Allowed hosts check.
-	if len(s.opt.AllowedHosts) > 0 && s.opt.IsDevelopment == false {
+	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
 		for _, allowedHost := range s.opt.AllowedHosts {
 			if strings.EqualFold(allowedHost, r.Host) {
@@ -97,8 +123,9 @@ func (s *Secure) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Ha
 			}
 		}
 
-		if isGoodHost == false {
-			http.Error(rw, "Bad Host", http.StatusInternalServerError)
+		if !isGoodHost {
+			s.badHostHandler.ServeHTTP(w, r)
+			return fmt.Errorf("Bad host name: %s", r.Host)
 		}
 	}
 
@@ -108,8 +135,8 @@ func (s *Secure) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Ha
 		if strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil {
 			isSSL = true
 		} else {
-			for hKey, hVal := range s.opt.SSLProxyHeaders {
-				if r.Header.Get(hKey) == hVal {
+			for k, v := range s.opt.SSLProxyHeaders {
+				if r.Header.Get(k) == v {
 					isSSL = true
 					break
 				}
@@ -125,42 +152,65 @@ func (s *Secure) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Ha
 				url.Host = s.opt.SSLHost
 			}
 
-			http.Redirect(rw, r, url.String(), http.StatusMovedPermanently)
+			status := http.StatusMovedPermanently
+			if s.opt.SSLTemporaryRedirect {
+				status = http.StatusTemporaryRedirect
+			}
+
+			http.Redirect(w, r, url.String(), status)
+			return fmt.Errorf("Redirecting to HTTPS")
 		}
 	}
 
 	// Strict Transport Security header.
-	if s.opt.STSSeconds != 0 && s.opt.IsDevelopment == false {
+	if s.opt.STSSeconds != 0 && !s.opt.IsDevelopment {
 		stsSub := ""
 		if s.opt.STSIncludeSubdomains {
 			stsSub = stsSubdomainString
 		}
 
-		rw.Header().Add(stsHeader, fmt.Sprintf("max-age=%d%s", s.opt.STSSeconds, stsSub))
+		w.Header().Add(stsHeader, fmt.Sprintf("max-age=%d%s", s.opt.STSSeconds, stsSub))
 	}
 
 	// Frame Options header.
-	if s.opt.CustomFrameOptionsValue != "" {
-		rw.Header().Add(frameOptionsHeader, s.opt.CustomFrameOptionsValue)
+	if len(s.opt.CustomFrameOptionsValue) > 0 {
+		w.Header().Add(frameOptionsHeader, s.opt.CustomFrameOptionsValue)
 	} else if s.opt.FrameDeny {
-		rw.Header().Add(frameOptionsHeader, frameOptionsValue)
+		w.Header().Add(frameOptionsHeader, frameOptionsValue)
 	}
 
 	// Content Type Options header.
 	if s.opt.ContentTypeNosniff {
-		rw.Header().Add(contentTypeHeader, contentTypeValue)
+		w.Header().Add(contentTypeHeader, contentTypeValue)
 	}
 
 	// XSS Protection header.
 	if s.opt.BrowserXssFilter {
-		rw.Header().Add(xssProtectionHeader, xssProtectionValue)
+		w.Header().Add(xssProtectionHeader, xssProtectionValue)
 	}
 
 	// Content Security Policy header.
-	if s.opt.ContentSecurityPolicy != "" {
-		rw.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
+	if len(s.opt.ContentSecurityPolicy) > 0 {
+		w.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
 	}
 
-	// Continue.
-	next(rw, r)
+	return nil
+}
+
+// Sets the handler to call in secure rejects the host name.
+// By default it's defaultBadHostHandler.
+func (s *Secure) SetBadHostHandler(handler http.Handler) {
+	s.badHostHandler = handler
+}
+
+// Special implementation for negroni: https://github.com/codegangsta/negroni
+func (s *Secure) NegroniHandler(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	err := s.process(w, r)
+
+	// If there was an error, do not continue.
+	if err != nil {
+		return
+	}
+
+	next(w, r)
 }
