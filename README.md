@@ -43,7 +43,7 @@ func main() {
 Make sure to include the secure middleware as close to the top (beginning) as possible. It's best to do the allowed hosts and SSL check before anything else.
 
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not https, it will be redirected to https with the host name of 'ssl.example.com'.
-Once those requirments are satisfied, it will add the following headers:
+Once those requirements are satisfied, it will add the following headers:
 ```
 Strict-Transport-Security: 315360000; includeSubdomains
 X-Frame-Options: DENY

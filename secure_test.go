@@ -11,7 +11,7 @@ var myHandler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *htt
 	w.Write([]byte("bar"))
 })
 
-func Test_No_Config(t *testing.T) {
+func TestNoConfig(t *testing.T) {
 	s := New(Options{
 	// Intentionally left blank.
 	})
@@ -25,7 +25,7 @@ func Test_No_Config(t *testing.T) {
 	expect(t, res.Body.String(), "bar")
 }
 
-func Test_No_AllowHosts(t *testing.T) {
+func TestNoAllowHosts(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{},
 	})
@@ -40,7 +40,7 @@ func Test_No_AllowHosts(t *testing.T) {
 	expect(t, res.Body.String(), `bar`)
 }
 
-func Test_Good_Single_AllowHosts(t *testing.T) {
+func TestGoodSingleAllowHosts(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{"www.example.com"},
 	})
@@ -55,7 +55,7 @@ func Test_Good_Single_AllowHosts(t *testing.T) {
 	expect(t, res.Body.String(), `bar`)
 }
 
-func Test_Bad_Single_AllowHosts(t *testing.T) {
+func TestBadSingleAllowHosts(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{"sub.example.com"},
 	})
@@ -69,7 +69,7 @@ func Test_Bad_Single_AllowHosts(t *testing.T) {
 	expect(t, res.Code, http.StatusInternalServerError)
 }
 
-func Test_Good_Multiple_AllowHosts(t *testing.T) {
+func TestGoodMultipleAllowHosts(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{"www.example.com", "sub.example.com"},
 	})
@@ -84,7 +84,7 @@ func Test_Good_Multiple_AllowHosts(t *testing.T) {
 	expect(t, res.Body.String(), `bar`)
 }
 
-func Test_Bad_Multiple_AllowHosts(t *testing.T) {
+func TestBadMultipleAllowHosts(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{"www.example.com", "sub.example.com"},
 	})
@@ -98,7 +98,7 @@ func Test_Bad_Multiple_AllowHosts(t *testing.T) {
 	expect(t, res.Code, http.StatusInternalServerError)
 }
 
-func Test_AllowHosts_Dev_Mode(t *testing.T) {
+func TestAllowHostsInDevMode(t *testing.T) {
 	s := New(Options{
 		AllowedHosts:  []string{"www.example.com", "sub.example.com"},
 		IsDevelopment: true,
@@ -113,7 +113,30 @@ func Test_AllowHosts_Dev_Mode(t *testing.T) {
 	expect(t, res.Code, http.StatusOK)
 }
 
-func Test_SSL(t *testing.T) {
+func TestBadHostHandler(t *testing.T) {
+	s := New(Options{
+		AllowedHosts: []string{"www.example.com", "sub.example.com"},
+	})
+
+	badHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "BadHost", http.StatusInternalServerError)
+	})
+
+	s.SetBadHostHandler(badHandler)
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www3.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusInternalServerError)
+
+	// http.Error outputs a new line character with the response.
+	expect(t, res.Body.String(), "BadHost\n")
+}
+
+func TestSSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect: true,
 	})
@@ -128,7 +151,7 @@ func Test_SSL(t *testing.T) {
 	expect(t, res.Code, http.StatusOK)
 }
 
-func Test_SSL_In_Dev_Mode(t *testing.T) {
+func TestSSLInDevMode(t *testing.T) {
 	s := New(Options{
 		SSLRedirect:   true,
 		IsDevelopment: true,
@@ -144,7 +167,7 @@ func Test_SSL_In_Dev_Mode(t *testing.T) {
 	expect(t, res.Code, http.StatusOK)
 }
 
-func Test_Basic_SSL(t *testing.T) {
+func TestBasicSSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect: true,
 	})
@@ -160,7 +183,7 @@ func Test_Basic_SSL(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://www.example.com/foo")
 }
 
-func Test_Basic_SSL_With_Host(t *testing.T) {
+func TestBasicSSLWithHost(t *testing.T) {
 	s := New(Options{
 		SSLRedirect: true,
 		SSLHost:     "secure.example.com",
@@ -177,7 +200,7 @@ func Test_Basic_SSL_With_Host(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo")
 }
 
-func Test_Bad_Proxy_SSL(t *testing.T) {
+func TestBadProxySSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect: true,
 	})
@@ -194,7 +217,7 @@ func Test_Bad_Proxy_SSL(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://www.example.com/foo")
 }
 
-func Test_Custom_Proxy_SSL(t *testing.T) {
+func TestCustomProxySSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect:     true,
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
@@ -211,7 +234,7 @@ func Test_Custom_Proxy_SSL(t *testing.T) {
 	expect(t, res.Code, http.StatusOK)
 }
 
-func Test_Custom_Proxy_SSL_In_Dev_Mode(t *testing.T) {
+func TestCustomProxySSLInDevMode(t *testing.T) {
 	s := New(Options{
 		SSLRedirect:     true,
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
@@ -229,7 +252,7 @@ func Test_Custom_Proxy_SSL_In_Dev_Mode(t *testing.T) {
 	expect(t, res.Code, http.StatusOK)
 }
 
-func Test_Custom_Proxy_And_Host_SSL(t *testing.T) {
+func TestCustomProxyAndHostSSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect:     true,
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
@@ -247,7 +270,7 @@ func Test_Custom_Proxy_And_Host_SSL(t *testing.T) {
 	expect(t, res.Code, http.StatusOK)
 }
 
-func Test_Custom_Bad_Proxy_And_Host_SSL(t *testing.T) {
+func TestCustomBadProxyAndHostSSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect:     true,
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "superman"},
@@ -266,7 +289,27 @@ func Test_Custom_Bad_Proxy_And_Host_SSL(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo")
 }
 
-func Test_STS_Header(t *testing.T) {
+func TestCustomBadProxyAndHostSSLWithTempRedirect(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:          true,
+		SSLProxyHeaders:      map[string]string{"X-Forwarded-Proto": "superman"},
+		SSLHost:              "secure.example.com",
+		SSLTemporaryRedirect: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusTemporaryRedirect)
+	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo")
+}
+
+func TestStsHeader(t *testing.T) {
 	s := New(Options{
 		STSSeconds: 315360000,
 	})
@@ -280,7 +323,7 @@ func Test_STS_Header(t *testing.T) {
 	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000")
 }
 
-func Test_STS_Header_In_Dev_Mode(t *testing.T) {
+func TestStsHeaderInDevMode(t *testing.T) {
 	s := New(Options{
 		STSSeconds:    315360000,
 		IsDevelopment: true,
@@ -295,7 +338,7 @@ func Test_STS_Header_In_Dev_Mode(t *testing.T) {
 	expect(t, res.Header().Get("Strict-Transport-Security"), "")
 }
 
-func Test_STS_Header_With_Subdomain(t *testing.T) {
+func TestStsHeaderWithSubdomain(t *testing.T) {
 	s := New(Options{
 		STSSeconds:           315360000,
 		STSIncludeSubdomains: true,
@@ -310,7 +353,7 @@ func Test_STS_Header_With_Subdomain(t *testing.T) {
 	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; includeSubdomains")
 }
 
-func Test_Frame_Deny(t *testing.T) {
+func TestFrameDeny(t *testing.T) {
 	s := New(Options{
 		FrameDeny: true,
 	})
@@ -324,7 +367,7 @@ func Test_Frame_Deny(t *testing.T) {
 	expect(t, res.Header().Get("X-Frame-Options"), "DENY")
 }
 
-func Test_Custom_Frame_Value(t *testing.T) {
+func TestCustomFrameValue(t *testing.T) {
 	s := New(Options{
 		CustomFrameOptionsValue: "SAMEORIGIN",
 	})
@@ -338,7 +381,7 @@ func Test_Custom_Frame_Value(t *testing.T) {
 	expect(t, res.Header().Get("X-Frame-Options"), "SAMEORIGIN")
 }
 
-func Test_Custom_Frame_Value_With_Deny(t *testing.T) {
+func TestCustomFrameValueWithDeny(t *testing.T) {
 	s := New(Options{
 		FrameDeny:               true,
 		CustomFrameOptionsValue: "SAMEORIGIN",
@@ -353,7 +396,7 @@ func Test_Custom_Frame_Value_With_Deny(t *testing.T) {
 	expect(t, res.Header().Get("X-Frame-Options"), "SAMEORIGIN")
 }
 
-func Test_Content_Nosniff(t *testing.T) {
+func TestContentNosniff(t *testing.T) {
 	s := New(Options{
 		ContentTypeNosniff: true,
 	})
@@ -367,7 +410,7 @@ func Test_Content_Nosniff(t *testing.T) {
 	expect(t, res.Header().Get("X-Content-Type-Options"), "nosniff")
 }
 
-func Test_XSS_Protection(t *testing.T) {
+func TestXSSProtection(t *testing.T) {
 	s := New(Options{
 		BrowserXssFilter: true,
 	})
@@ -381,7 +424,7 @@ func Test_XSS_Protection(t *testing.T) {
 	expect(t, res.Header().Get("X-XSS-Protection"), "1; mode=block")
 }
 
-func Test_CSP(t *testing.T) {
+func TestCsp(t *testing.T) {
 	s := New(Options{
 		ContentSecurityPolicy: "default-src 'self'",
 	})
