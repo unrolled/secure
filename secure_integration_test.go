@@ -1,4 +1,4 @@
-// +build negroni
+// +build intergration
 
 package secure
 
@@ -23,7 +23,7 @@ func TestIntegration(t *testing.T) {
 	})
 
 	n := negroni.New()
-	n.Use(negroni.HandlerFunc(secureMiddleware.NegroniHandler))
+	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
 	n.UseHandler(mux)
 
 	res := httptest.NewRecorder()
@@ -49,7 +49,7 @@ func TestIntegrationWithError(t *testing.T) {
 	})
 
 	n := negroni.New()
-	n.Use(negroni.HandlerFunc(secureMiddleware.NegroniHandler))
+	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
 	n.UseHandler(mux)
 
 	res := httptest.NewRecorder()

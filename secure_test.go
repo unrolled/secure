@@ -438,6 +438,25 @@ func TestCsp(t *testing.T) {
 	expect(t, res.Header().Get("Content-Security-Policy"), "default-src 'self'")
 }
 
+func TestInlineSecure(t *testing.T) {
+	s := New(Options{
+		FrameDeny: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.HandlerFuncWithNext(w, r, nil)
+		w.Write([]byte("bar"))
+	})
+
+	handler.ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-Frame-Options"), "DENY")
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {

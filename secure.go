@@ -203,8 +203,8 @@ func (s *Secure) SetBadHostHandler(handler http.Handler) {
 	s.badHostHandler = handler
 }
 
-// Special implementation for negroni: https://github.com/codegangsta/negroni
-func (s *Secure) NegroniHandler(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+// Special implementation for negroni, but could be used elsewhere.
+func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	err := s.process(w, r)
 
 	// If there was an error, do not continue.
@@ -212,5 +212,7 @@ func (s *Secure) NegroniHandler(w http.ResponseWriter, r *http.Request, next htt
 		return
 	}
 
-	next(w, r)
+	if next != nil {
+		next(w, r)
+	}
 }
