@@ -1,8 +1,6 @@
-# Secure
+# Secure [![GoDoc](https://godoc.org/github.com/unrolled/secure?status.png)](http://godoc.org/github.com/unrolled/secure)
 
 Secure is an HTTP middleware for Go that facilitates some quick security wins.
-
-[API Reference](http://godoc.org/github.com/unrolled/secure)
 
 ## Usage
 
