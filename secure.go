@@ -89,7 +89,7 @@ type Secure struct {
 	badHostHandler http.Handler
 }
 
-// Constructs a new Secure instance with supplied options.
+// New constructs a new Secure instance with supplied options.
 func New(options Options) *Secure {
 	return &Secure{
 		opt:            options,
@@ -97,6 +97,7 @@ func New(options Options) *Secure {
 	}
 }
 
+// Handler implements the http.HandlerFunc for integration with the standard net/http lib.
 func (s *Secure) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Let secure process the request. If it returns an error,
@@ -197,13 +198,12 @@ func (s *Secure) process(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// Sets the handler to call in secure rejects the host name.
-// By default it's defaultBadHostHandler.
+// SetBadHostHandler sets the handler to call when secure rejects the host name.
 func (s *Secure) SetBadHostHandler(handler http.Handler) {
 	s.badHostHandler = handler
 }
 
-// Special implementation for negroni, but could be used elsewhere.
+// HandlerFuncWithNext is a special implementation for Negroni, but could be used elsewhere.
 func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	err := s.process(w, r)
 
