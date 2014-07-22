@@ -1,4 +1,4 @@
-// +build intergration
+// +build integration
 
 package secure
 
