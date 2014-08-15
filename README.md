@@ -11,7 +11,7 @@ package main
 import (
     "net/http"
 
-    "github.com/unrolled/secure"
+    "gopkg.in/unrolled/secure.v1"
 )
 
 func myApp(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +89,7 @@ import (
     "log"
     "net/http"
 
-    "github.com/unrolled/secure"
+    "gopkg.in/unrolled/secure.v1"
 )
 
 func myApp(w http.ResponseWriter, r *http.Request) {
@@ -128,9 +128,9 @@ package main
 import (
     "net/http"
 
-    "github.com/unrolled/secure"
     "github.com/zenazn/goji"
     "github.com/zenazn/goji/web"
+    "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
@@ -156,7 +156,7 @@ import (
     "net/http"
 
     "github.com/codegangsta/negroni"
-    "github.com/unrolled/secure"
+    "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {

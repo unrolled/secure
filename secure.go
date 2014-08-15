@@ -5,7 +5,7 @@
 // import (
 //   "net/http"
 //
-//   "github.com/unrolled/secure"
+//   "gopkg.in/unrolled/secure.v1"
 // )
 //
 // func myApp(w http.ResponseWriter, r *http.Request) {

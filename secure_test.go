@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var myHandler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("bar"))
 })
 
