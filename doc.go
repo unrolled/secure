@@ -5,16 +5,14 @@
   import (
       "net/http"
 
-      "gopkg.in/unrolled/secure.v1"
+      "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
   )
 
-  func myApp(w http.ResponseWriter, r *http.Request) {
-      w.Write([]byte("Hello world!"))
-  }
+  var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+      w.Write([]byte("hello world"))
+  })
 
   func main() {
-      myHandler := http.HandlerFunc(myApp)
-
       secureMiddleware := secure.New(secure.Options{
           AllowedHosts: []string{"www.example.com", "sub.example.com"},
           SSLRedirect:  true,

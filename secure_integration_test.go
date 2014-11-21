@@ -11,6 +11,8 @@ import (
 	"github.com/codegangsta/negroni"
 )
 
+// go test -tags=integration
+
 func TestIntegration(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/foo", func(w http.ResponseWriter, r *http.Request) {
