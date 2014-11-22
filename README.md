@@ -1,6 +1,6 @@
 # Secure [![GoDoc](https://godoc.org/github.com/unrolled/secure?status.png)](http://godoc.org/github.com/unrolled/secure)
 
-Secure is an HTTP middleware for Go that facilitates some quick security wins.
+Secure is an HTTP middleware for Go that facilitates some quick security wins. It's a standard net/http [Handler](http://golang.org/pkg/net/http/#Handler), and can be used with many frameworks or directly with Go's net/http package.
 
 ## Usage
 
@@ -14,13 +14,11 @@ import (
     "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
 )
 
-func myApp(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Hello world!"))
-}
+var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("hello world"))
+})
 
 func main() {
-    myHandler := http.HandlerFunc(myApp)
-
     secureMiddleware := secure.New(secure.Options{
         AllowedHosts:          []string{"example.com", "ssl.example.com"},
         SSLRedirect:           true,
@@ -39,7 +37,7 @@ func main() {
 }
 ~~~
 
-Make sure to include the secure middleware as close to the top (beginning) as possible. It's best to do the allowed hosts and SSL check before anything else.
+Make sure to include the secure middleware as close to the top (beginning) as possible (but after logging and recovery). It's best to do the allowed hosts and SSL check before anything else.
 
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
 Once those requirements are satisfied, it will add the following headers:
@@ -55,12 +53,12 @@ Content-Security-Policy: default-src 'self'
 When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, and STS Header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on HTTP), or block `localhost` has a bad host.
 
 
-### Options
-`secure.Options` comes with a variety of configuration settings:
+### Available Options
+Secure comes with a variety of configuration options (Note: these are not the default option values. See the defaults below.):
 
 ~~~ go
 // ...
-secureMiddleware := secure.New(secure.Options{
+s := secure.New(secure.Options{
     AllowedHosts: []string{"ssl.example.com"}, // AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
     SSLRedirect: true, // If SSLRedirect is set to true, then only allow HTTPS requests. Default is false.
     SSLTemporaryRedirect: false, // If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
@@ -78,6 +76,30 @@ secureMiddleware := secure.New(secure.Options{
 // ...
 ~~~
 
+### Default Options
+These are the preset options for Secure:
+
+~~~ go
+    AllowedHosts: []string,
+    SSLRedirect: false,
+    SSLTemporaryRedirect: false,
+    SSLHost: "",
+    SSLProxyHeaders: map[string]string{},
+    STSSeconds: 0,
+    STSIncludeSubdomains: false,
+    FrameDeny: false,
+    CustomFrameOptionsValue: "",
+    ContentTypeNosniff: false,
+    BrowserXssFilter: false,
+    ContentSecurityPolicy: "",
+    IsDevelopment: false,
+~~~
+Also note the default bad host handler throws an error:
+~~~ go
+http.Error(w, "Bad Host", http.StatusInternalServerError)
+~~~
+Call `secure.SetBadHostHandler` to change the bad host handler.
+
 ### Redirecting HTTP to HTTPS
 If you want to redirect all HTTP requests to HTTPS, you can use the following example.
 
@@ -92,13 +114,11 @@ import (
     "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
 )
 
-func myApp(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Hello world!"))
-}
+var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("hello world"))
+})
 
 func main() {
-    myHandler := http.HandlerFunc(myApp)
-
     secureMiddleware := secure.New(secure.Options{
         SSLRedirect: true,
         SSLHost:     "localhost:8443", // This is optional in production. The default behavior is to just redirect the request to the HTTPS protocol. Example: http://github.com/some_page would be redirected to https://github.com/some_page.
@@ -120,6 +140,45 @@ func main() {
 
 ## Integration Examples
 
+### [Gin](https://github.com/gin-gonic/gin)
+~~~ go
+// main.go
+package main
+
+import (
+    "github.com/gin-gonic/gin"
+    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
+)
+
+func main() {
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
+    secureFunc := func() gin.HandlerFunc {
+        return func(c *gin.Context) {
+            err := secureMiddleware.Process(c.Writer, c.Request)
+
+            // If there was an error, do not continue.
+            if err != nil {
+                return
+            }
+
+            c.Next()
+        }
+    }()
+
+    router := gin.Default()
+    router.Use(secureFunc)
+
+    router.GET("/", func(c *gin.Context) {
+        c.String(200, "X-Frame-Options header is now `DENY`.")
+    })
+
+    router.Run(":3000")
+}
+~~~
+
+
 ### [Goji](https://github.com/zenazn/goji)
 ~~~ go
 // main.go
@@ -139,7 +198,7 @@ func main() {
     })
 
     goji.Get("/", func(c web.C, w http.ResponseWriter, req *http.Request) {
-        w.Write([]byte("X-Frame-Options header should be `DENY`."))
+        w.Write([]byte("X-Frame-Options header is now `DENY`."))
     })
     goji.Use(secureMiddleware.Handler)
     goji.Serve() // Defaults to ":8000".
@@ -162,7 +221,7 @@ import (
 func main() {
     mux := http.NewServeMux()
     mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-        w.Write([]byte("X-Frame-Options header should be `DENY`."))
+        w.Write([]byte("X-Frame-Options header is now `DENY`."))
     })
 
     secureMiddleware := secure.New(secure.Options{
@@ -173,7 +232,7 @@ func main() {
     n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
     n.UseHandler(mux)
 
-    n.Run("0.0.0.0:3000")
+    n.Run(":3000")
 }
 ~~~
 

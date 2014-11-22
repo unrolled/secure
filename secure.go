@@ -71,12 +71,17 @@ func New(options Options) *Secure {
 	}
 }
 
+// SetBadHostHandler sets the handler to call when secure rejects the host name.
+func (s *Secure) SetBadHostHandler(handler http.Handler) {
+	s.badHostHandler = handler
+}
+
 // Handler implements the http.HandlerFunc for integration with the standard net/http lib.
 func (s *Secure) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Let secure process the request. If it returns an error,
 		// that indicates the request should not continue.
-		err := s.process(w, r)
+		err := s.Process(w, r)
 
 		// If there was an error, do not continue.
 		if err != nil {
@@ -87,7 +92,18 @@ func (s *Secure) Handler(h http.Handler) http.Handler {
 	})
 }
 
-func (s *Secure) process(w http.ResponseWriter, r *http.Request) error {
+// HandlerFuncWithNext is a special implementation for Negroni, but could be used elsewhere.
+func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	err := s.Process(w, r)
+
+	// If there was an error, do not call next.
+	if err == nil && next != nil {
+		next(w, r)
+	}
+}
+
+// Process runs the actual checks and returns an error if the middleware chain should stop.
+func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	// Allowed hosts check.
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
@@ -170,23 +186,4 @@ func (s *Secure) process(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
-}
-
-// SetBadHostHandler sets the handler to call when secure rejects the host name.
-func (s *Secure) SetBadHostHandler(handler http.Handler) {
-	s.badHostHandler = handler
-}
-
-// HandlerFuncWithNext is a special implementation for Negroni, but could be used elsewhere.
-func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	err := s.process(w, r)
-
-	// If there was an error, do not continue.
-	if err != nil {
-		return
-	}
-
-	if next != nil {
-		next(w, r)
-	}
 }

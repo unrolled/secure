@@ -1,4 +1,4 @@
-/*Package secure is an http middleware for Go that facilitates some quick security wins.
+/*Package secure is an HTTP middleware for Go that facilitates some quick security wins.
 
   package main
 
