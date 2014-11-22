@@ -64,9 +64,16 @@ type Secure struct {
 }
 
 // New constructs a new Secure instance with supplied options.
-func New(options Options) *Secure {
+func New(options ...Options) *Secure {
+	var o Options
+	if len(options) == 0 {
+		o = Options{}
+	} else {
+		o = options[0]
+	}
+
 	return &Secure{
-		opt:            options,
+		opt:            o,
 		badHostHandler: http.HandlerFunc(defaultBadHostHandler),
 	}
 }

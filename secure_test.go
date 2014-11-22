@@ -12,9 +12,7 @@ var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 })
 
 func TestNoConfig(t *testing.T) {
-	s := New(Options{
-	// Intentionally left blank.
-	})
+	s := New()
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)

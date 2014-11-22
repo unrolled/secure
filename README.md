@@ -72,7 +72,7 @@ s := secure.New(secure.Options{
     BrowserXssFilter: true, // If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
     ContentSecurityPolicy: "default-src 'self'", // ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
     IsDevelopment: true, // This will cause the AllowedHosts, SSLRedirect, and STSSeconds/STSIncludeSubdomains options to be ignored during development. When deploying to production, be sure to set this to false.
-}))
+})
 // ...
 ~~~
 
@@ -80,6 +80,11 @@ s := secure.New(secure.Options{
 These are the preset options for Secure:
 
 ~~~ go
+s := secure.New()
+
+// Is the same as the default configuration options:
+
+l := secure.New(secure.Options{
     AllowedHosts: []string,
     SSLRedirect: false,
     SSLTemporaryRedirect: false,
@@ -93,6 +98,7 @@ These are the preset options for Secure:
     BrowserXssFilter: false,
     ContentSecurityPolicy: "",
     IsDevelopment: false,
+})
 ~~~
 Also note the default bad host handler throws an error:
 ~~~ go
@@ -138,7 +144,7 @@ func main() {
 }
 ~~~
 
-## Integration Examples
+## Integration examples
 
 ### [Gin](https://github.com/gin-gonic/gin)
 ~~~ go
