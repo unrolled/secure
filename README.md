@@ -37,7 +37,7 @@ func main() {
 }
 ~~~
 
-Make sure to include the secure middleware as close to the top (beginning) as possible (but after logging and recovery). It's best to do the allowed hosts and SSL check before anything else.
+Be sure to include the secure middleware as close to the top (beginning) as possible (but after logging and recovery). It's best to do the allowed hosts and SSL check before anything else.
 
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
 Once those requirements are satisfied, it will add the following headers:
@@ -49,7 +49,7 @@ X-XSS-Protection: 1; mode=block
 Content-Security-Policy: default-src 'self'
 ~~~
 
-###Set the `IsDevelopment` option to `true` when developing.
+###Set the `IsDevelopment` option to `true` when developing!
 When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, and STS Header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on HTTP), or block `localhost` has a bad host.
 
 
@@ -238,7 +238,7 @@ func main() {
 
 
 ## Nginx
-If you would like to add the above security rules directly to your nginx configuration, everything is below:
+If you would like to add the above security rules directly to your [Nginx](http://wiki.nginx.org/Main) configuration, everything is below:
 ~~~
 # Allowed Hosts:
 if ($host !~* ^(example.com|ssl.example.com)$ ) {
