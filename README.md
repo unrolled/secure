@@ -37,7 +37,7 @@ func main() {
 }
 ~~~
 
-Be sure to include the secure middleware as close to the top (beginning) as possible (but after logging and recovery). It's best to do the allowed hosts and SSL check before anything else.
+Be sure to include the Secure middleware as close to the top (beginning) as possible (but after logging and recovery). It's best to do the allowed hosts and SSL check before anything else.
 
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
 Once those requirements are satisfied, it will add the following headers:
