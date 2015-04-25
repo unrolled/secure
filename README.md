@@ -146,6 +146,32 @@ func main() {
 
 ## Integration examples
 
+### [Echo](https://github.com/labstack/echo)
+~~~ go
+// main.go
+package main
+
+import (
+    "net/http"
+
+    "github.com/labstack/echo"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+)
+
+func main() {
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
+
+    e := echo.New()
+    e.Get("/", func(c *echo.Context) {
+        c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
+    })
+    e.Use(secureMiddleware.Handler)
+    e.Run(":3000")
+}
+~~~
+
 ### [Gin](https://github.com/gin-gonic/gin)
 ~~~ go
 // main.go
@@ -183,7 +209,6 @@ func main() {
     router.Run(":3000")
 }
 ~~~
-
 
 ### [Goji](https://github.com/zenazn/goji)
 ~~~ go
@@ -241,7 +266,6 @@ func main() {
     n.Run(":3000")
 }
 ~~~
-
 
 ## Nginx
 If you would like to add the above security rules directly to your [Nginx](http://wiki.nginx.org/Main) configuration, everything is below:
