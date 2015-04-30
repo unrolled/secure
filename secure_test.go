@@ -307,13 +307,61 @@ func TestCustomBadProxyAndHostSSLWithTempRedirect(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo")
 }
 
-func TestStsHeader(t *testing.T) {
+func TestStsHeaderWithNoSSL(t *testing.T) {
 	s := New(Options{
 		STSSeconds: 315360000,
 	})
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Strict-Transport-Security"), "")
+}
+
+func TestStsHeaderWithNoSSLButWithForce(t *testing.T) {
+	s := New(Options{
+		STSSeconds:     315360000,
+		ForceSTSHeader: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000")
+}
+
+func TestStsHeaderWithNoSSLButWithForceAndIsDev(t *testing.T) {
+	s := New(Options{
+		STSSeconds:     315360000,
+		ForceSTSHeader: true,
+		IsDevelopment:  true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Strict-Transport-Security"), "")
+}
+
+func TestStsHeaderWithSSL(t *testing.T) {
+	s := New(Options{
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+		STSSeconds:      315360000,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -329,6 +377,7 @@ func TestStsHeaderInDevMode(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.URL.Scheme = "https"
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -344,6 +393,7 @@ func TestStsHeaderWithSubdomain(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.URL.Scheme = "https"
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 

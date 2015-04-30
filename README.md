@@ -52,8 +52,7 @@ Content-Security-Policy: default-src 'self'
 ###Set the `IsDevelopment` option to `true` when developing!
 When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, and STS Header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on HTTP), or block `localhost` has a bad host.
 
-
-### Available Options
+### Available options
 Secure comes with a variety of configuration options (Note: these are not the default option values. See the defaults below.):
 
 ~~~ go
@@ -66,6 +65,7 @@ s := secure.New(secure.Options{
     SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"}, // SSLProxyHeaders is set of header keys with associated values that would indicate a valid HTTPS request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
     STSSeconds: 315360000, // STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
     STSIncludeSubdomains: true, // If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
+    ForceSTSHeader: false, // STS header is only included when the connection is HTTPS. If you want to force it to always be added, set to true. `IsDevelopment` still overrides this. Default is false.
     FrameDeny: true, // If FrameDeny is set to true, adds the X-Frame-Options header with the value of `DENY`. Default is false.
     CustomFrameOptionsValue: "SAMEORIGIN", // CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option.
     ContentTypeNosniff: true, // If ContentTypeNosniff is true, adds the X-Content-Type-Options header with the value `nosniff`. Default is false.
@@ -76,7 +76,7 @@ s := secure.New(secure.Options{
 // ...
 ~~~
 
-### Default Options
+### Default options
 These are the preset options for Secure:
 
 ~~~ go
@@ -92,6 +92,7 @@ l := secure.New(secure.Options{
     SSLProxyHeaders: map[string]string{},
     STSSeconds: 0,
     STSIncludeSubdomains: false,
+    ForceSTSHeader: false,
     FrameDeny: false,
     CustomFrameOptionsValue: "",
     ContentTypeNosniff: false,
@@ -143,6 +144,9 @@ func main() {
     log.Fatal(http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", app))
 }
 ~~~
+
+### Strict Transport Security
+The STS header will only be sent on verified HTTPS connections (and when `IsDevelopment` is false). Be sure to set the `SSLProxyHeaders` option if your application is behind a proxy to ensure the proper behavior. If you need the STS header for all HTTP and HTTPS requests (which you [shouldn't](http://tools.ietf.org/html/rfc6797#section-7.2)), you can use the `ForceSTSHeader` option. Note that if `IsDevelopment` is true, it will still disable this header even when `ForceSTSHeader` is set to true.
 
 ## Integration examples
 

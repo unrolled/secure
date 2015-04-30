@@ -38,6 +38,8 @@ type Options struct {
 	STSSeconds int64
 	// If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
 	STSIncludeSubdomains bool
+	// If ForceSTSHeader is set to true, the STS header will be added even when the connection is HTTP. Default is false.
+	ForceSTSHeader bool
 	// If FrameDeny is set to true, adds the X-Frame-Options header with the value of `DENY`. Default is false.
 	FrameDeny bool
 	// CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option.
@@ -127,41 +129,41 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
-	// SSL check.
-	if s.opt.SSLRedirect && s.opt.IsDevelopment == false {
-		isSSL := false
-		if strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil {
-			isSSL = true
-		} else {
-			for k, v := range s.opt.SSLProxyHeaders {
-				if r.Header.Get(k) == v {
-					isSSL = true
-					break
-				}
+	// Determine if we are on HTTPS.
+	isSSL := false
+	if strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil {
+		isSSL = true
+	} else {
+		for k, v := range s.opt.SSLProxyHeaders {
+			if r.Header.Get(k) == v {
+				isSSL = true
+				break
 			}
-		}
-
-		if isSSL == false {
-			url := r.URL
-			url.Scheme = "https"
-			url.Host = r.Host
-
-			if len(s.opt.SSLHost) > 0 {
-				url.Host = s.opt.SSLHost
-			}
-
-			status := http.StatusMovedPermanently
-			if s.opt.SSLTemporaryRedirect {
-				status = http.StatusTemporaryRedirect
-			}
-
-			http.Redirect(w, r, url.String(), status)
-			return fmt.Errorf("Redirecting to HTTPS")
 		}
 	}
 
-	// Strict Transport Security header.
-	if s.opt.STSSeconds != 0 && !s.opt.IsDevelopment {
+	// SSL check.
+	if s.opt.SSLRedirect && !isSSL && !s.opt.IsDevelopment {
+		url := r.URL
+		url.Scheme = "https"
+		url.Host = r.Host
+
+		if len(s.opt.SSLHost) > 0 {
+			url.Host = s.opt.SSLHost
+		}
+
+		status := http.StatusMovedPermanently
+		if s.opt.SSLTemporaryRedirect {
+			status = http.StatusTemporaryRedirect
+		}
+
+		http.Redirect(w, r, url.String(), status)
+		return fmt.Errorf("Redirecting to HTTPS")
+	}
+
+	// Strict Transport Security header. Only add header when we know it's an SSL connection.
+	// See https://tools.ietf.org/html/rfc6797#section-7.2 for details.
+	if s.opt.STSSeconds != 0 && (isSSL || s.opt.ForceSTSHeader) && !s.opt.IsDevelopment {
 		stsSub := ""
 		if s.opt.STSIncludeSubdomains {
 			stsSub = stsSubdomainString
