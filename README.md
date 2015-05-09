@@ -26,6 +26,7 @@ func main() {
         SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
         STSSeconds:            315360000,
         STSIncludeSubdomains:  true,
+        STSPreload:            true,
         FrameDeny:             true,
         ContentTypeNosniff:    true,
         BrowserXssFilter:      true,
@@ -42,7 +43,7 @@ Be sure to include the Secure middleware as close to the top (beginning) as poss
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
 Once those requirements are satisfied, it will add the following headers:
 ~~~ go
-Strict-Transport-Security: 315360000; includeSubdomains
+Strict-Transport-Security: 315360000; includeSubdomains; preload
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 X-XSS-Protection: 1; mode=block
@@ -65,6 +66,7 @@ s := secure.New(secure.Options{
     SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"}, // SSLProxyHeaders is set of header keys with associated values that would indicate a valid HTTPS request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
     STSSeconds: 315360000, // STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
     STSIncludeSubdomains: true, // If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
+    STSPreload: true, // If STSPreload is set to true, the `preload` flag will be appended to the Strict-Transport-Security header. Default is false.
     ForceSTSHeader: false, // STS header is only included when the connection is HTTPS. If you want to force it to always be added, set to true. `IsDevelopment` still overrides this. Default is false.
     FrameDeny: true, // If FrameDeny is set to true, adds the X-Frame-Options header with the value of `DENY`. Default is false.
     CustomFrameOptionsValue: "SAMEORIGIN", // CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option.
@@ -92,6 +94,7 @@ l := secure.New(secure.Options{
     SSLProxyHeaders: map[string]string{},
     STSSeconds: 0,
     STSIncludeSubdomains: false,
+    STSPreload: false,
     ForceSTSHeader: false,
     FrameDeny: false,
     CustomFrameOptionsValue: "",
@@ -147,6 +150,8 @@ func main() {
 
 ### Strict Transport Security
 The STS header will only be sent on verified HTTPS connections (and when `IsDevelopment` is false). Be sure to set the `SSLProxyHeaders` option if your application is behind a proxy to ensure the proper behavior. If you need the STS header for all HTTP and HTTPS requests (which you [shouldn't](http://tools.ietf.org/html/rfc6797#section-7.2)), you can use the `ForceSTSHeader` option. Note that if `IsDevelopment` is true, it will still disable this header even when `ForceSTSHeader` is set to true.
+
+* The `preload` flag is required for domain inclusion in Chrome's [preload](https://hstspreload.appspot.com/) list.
 
 ## Integration examples
 

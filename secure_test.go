@@ -385,7 +385,7 @@ func TestStsHeaderInDevMode(t *testing.T) {
 	expect(t, res.Header().Get("Strict-Transport-Security"), "")
 }
 
-func TestStsHeaderWithSubdomain(t *testing.T) {
+func TestStsHeaderWithSubdomains(t *testing.T) {
 	s := New(Options{
 		STSSeconds:           315360000,
 		STSIncludeSubdomains: true,
@@ -399,6 +399,39 @@ func TestStsHeaderWithSubdomain(t *testing.T) {
 
 	expect(t, res.Code, http.StatusOK)
 	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; includeSubdomains")
+}
+
+func TestStsHeaderWithPreload(t *testing.T) {
+	s := New(Options{
+		STSSeconds: 315360000,
+		STSPreload: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.URL.Scheme = "https"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; preload")
+}
+
+func TestStsHeaderWithSubdomainsWithPreload(t *testing.T) {
+	s := New(Options{
+		STSSeconds:           315360000,
+		STSIncludeSubdomains: true,
+		STSPreload:           true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.URL.Scheme = "https"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; includeSubdomains; preload")
 }
 
 func TestFrameDeny(t *testing.T) {
