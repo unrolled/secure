@@ -9,6 +9,7 @@ import (
 const (
 	stsHeader           = "Strict-Transport-Security"
 	stsSubdomainString  = "; includeSubdomains"
+	stsPreloadString    = "; preload"
 	frameOptionsHeader  = "X-Frame-Options"
 	frameOptionsValue   = "DENY"
 	contentTypeHeader   = "X-Content-Type-Options"
@@ -38,6 +39,8 @@ type Options struct {
 	STSSeconds int64
 	// If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
 	STSIncludeSubdomains bool
+	// If STSPreload is set to true, the `preload` flag will be appended to the Strict-Transport-Security header. Default is false.
+	STSPreload bool
 	// If ForceSTSHeader is set to true, the STS header will be added even when the connection is HTTP. Default is false.
 	ForceSTSHeader bool
 	// If FrameDeny is set to true, adds the X-Frame-Options header with the value of `DENY`. Default is false.
@@ -167,6 +170,10 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 		stsSub := ""
 		if s.opt.STSIncludeSubdomains {
 			stsSub = stsSubdomainString
+		}
+
+		if s.opt.STSPreload {
+			stsSub += stsPreloadString
 		}
 
 		w.Header().Add(stsHeader, fmt.Sprintf("max-age=%d%s", s.opt.STSSeconds, stsSub))
