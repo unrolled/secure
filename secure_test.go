@@ -493,7 +493,7 @@ func TestContentNosniff(t *testing.T) {
 
 func TestXSSProtection(t *testing.T) {
 	s := New(Options{
-		BrowserXssFilter: true,
+		BrowserXSSFilter: true,
 	})
 
 	res := httptest.NewRecorder()
@@ -536,6 +536,23 @@ func TestInlineSecure(t *testing.T) {
 
 	expect(t, res.Code, http.StatusOK)
 	expect(t, res.Header().Get("X-Frame-Options"), "DENY")
+}
+
+func TestHPKP(t *testing.T) {
+	// https://developer.mozilla.org/en-US/docs/Web/Security/Public_Key_Pinning
+	const hpkp = `pin-sha256="cUPcTAZWKaASuYWhhneDttWpY3oBAkE3h2+soZS7sWs="; pin-sha256="M8HztCzM3elUxkcjR2S5P4hhyBNf6lHkmjAHKhpGPWE="; max-age=5184000; includeSubdomains; report-uri="https://www.example.net/hpkp-report"`
+
+	s := New(Options{
+		PublicKey: hpkp,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Public-Key-Pins"), hpkp)
 }
 
 /* Test Helpers */
