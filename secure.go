@@ -50,11 +50,11 @@ type Options struct {
 	CustomFrameOptionsValue string
 	// If ContentTypeNosniff is true, adds the X-Content-Type-Options header with the value `nosniff`. Default is false.
 	ContentTypeNosniff bool
-	// If BrowserXSSFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
-	BrowserXSSFilter bool
+	// If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
+	BrowserXssFilter bool
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
 	ContentSecurityPolicy string
-	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is []string.
+	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
 	PublicKey string
 	// When developing, the AllowedHosts, SSL, and STS options can cause some unwanted effects. Usually testing happens on http, not https, and on localhost, not your production domain... so set this to true for dev environment.
 	// If you would like your development environment to mimic production with complete Host blocking, SSL redirects, and STS headers, leave this as false. Default if false.
@@ -70,8 +70,6 @@ type Secure struct {
 	// Handlers for when an error occurs (ie bad host).
 	badHostHandler http.Handler
 }
-
-var defaultHeader = make(http.Header)
 
 // New constructs a new Secure instance with supplied options.
 func New(options ...Options) *Secure {
@@ -195,11 +193,12 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// XSS Protection header.
-	if s.opt.BrowserXSSFilter {
+	if s.opt.BrowserXssFilter {
 		w.Header().Add(xssProtectionHeader, xssProtectionValue)
 	}
 
-	if len(s.opt.PublicKey) > 0 {
+	// HPKP header.
+	if len(s.opt.PublicKey) > 0 && isSSL && !s.opt.IsDevelopment {
 		w.Header().Add(hpkpHeader, s.opt.PublicKey)
 	}
 
