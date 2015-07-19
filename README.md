@@ -1,6 +1,6 @@
 # Secure [![GoDoc](https://godoc.org/github.com/unrolled/secure?status.svg)](http://godoc.org/github.com/unrolled/secure) [![Build Status](https://travis-ci.org/unrolled/secure.svg)](https://travis-ci.org/unrolled/secure)
 
-Secure is an HTTP middleware for Go that facilitates some quick security wins. It's a standard net/http [Handler](http://golang.org/pkg/net/http/#Handler), and can be used with many frameworks or directly with Go's net/http package.
+Secure is an HTTP middleware for Go that facilitates some quick security wins. It's a standard net/http [Handler](http://golang.org/pkg/net/http/#Handler), and can be used with many [frameworks](#integration-examples) or directly with Go's net/http package.
 
 ## Usage
 
@@ -31,10 +31,11 @@ func main() {
         ContentTypeNosniff:    true,
         BrowserXssFilter:      true,
         ContentSecurityPolicy: "default-src 'self'",
+        PublicKey:             `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`,
     })
 
     app := secureMiddleware.Handler(myHandler)
-    http.ListenAndServe("0.0.0.0:3000", app)
+    http.ListenAndServe("127.0.0.1:3000", app)
 }
 ~~~
 
@@ -48,10 +49,11 @@ X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 X-XSS-Protection: 1; mode=block
 Content-Security-Policy: default-src 'self'
+PublicKey: pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"
 ~~~
 
 ###Set the `IsDevelopment` option to `true` when developing!
-When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, and STS Header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on HTTP), or block `localhost` has a bad host.
+When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, STS header, and HPKP header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on HTTP), or block `localhost` has a bad host.
 
 ### Available options
 Secure comes with a variety of configuration options (Note: these are not the default option values. See the defaults below.):
@@ -73,6 +75,8 @@ s := secure.New(secure.Options{
     ContentTypeNosniff: true, // If ContentTypeNosniff is true, adds the X-Content-Type-Options header with the value `nosniff`. Default is false.
     BrowserXssFilter: true, // If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
     ContentSecurityPolicy: "default-src 'self'", // ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
+    PublicKey: `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`, // PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
+    
     IsDevelopment: true, // This will cause the AllowedHosts, SSLRedirect, and STSSeconds/STSIncludeSubdomains options to be ignored during development. When deploying to production, be sure to set this to false.
 })
 // ...
@@ -101,6 +105,7 @@ l := secure.New(secure.Options{
     ContentTypeNosniff: false,
     BrowserXssFilter: false,
     ContentSecurityPolicy: "",
+    PublicKey: "",
     IsDevelopment: false,
 })
 ~~~
@@ -173,11 +178,14 @@ func main() {
     })
 
     e := echo.New()
-    e.Get("/", func(c *echo.Context) {
+
+    e.Get("/", func(c *echo.Context) error {
         c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
+        return nil
     })
     e.Use(secureMiddleware.Handler)
-    e.Run(":3000")
+
+    e.Run("127.0.0.1:3000")
 }
 ~~~
 
@@ -215,7 +223,7 @@ func main() {
         c.String(200, "X-Frame-Options header is now `DENY`.")
     })
 
-    router.Run(":3000")
+    router.Run("127.0.0.1:3000")
 }
 ~~~
 
@@ -227,9 +235,9 @@ package main
 import (
     "net/http"
 
+    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
     "github.com/zenazn/goji"
     "github.com/zenazn/goji/web"
-    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
@@ -272,7 +280,7 @@ func main() {
     n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
     n.UseHandler(mux)
 
-    n.Run(":3000")
+    n.Run("127.0.0.1:3000")
 }
 ~~~
 
@@ -297,4 +305,5 @@ add_header X-Frame-Options "DENY";
 add_header X-Content-Type-Options "nosniff";
 add_header X-XSS-Protection "1; mode=block";
 add_header Content-Security-Policy "default-src 'self'";
+add_header Public-Key-Pins 'pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"';
 ~~~

@@ -19,7 +19,7 @@
       })
 
       app := secureMiddleware.Handler(myHandler)
-      http.ListenAndServe("0.0.0.0:3000", app)
+      http.ListenAndServe("127.0.0.1:3000", app)
   }
 */
 package secure

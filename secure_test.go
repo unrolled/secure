@@ -556,6 +556,18 @@ func TestHPKP(t *testing.T) {
 	expect(t, res.Header().Get("Public-Key-Pins"), hpkp)
 }
 
+func TestHPKPNotSet(t *testing.T) {
+	s := New()
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Public-Key-Pins"), "")
+}
+
 func TestHPKPInDevMode(t *testing.T) {
 	s := New(Options{
 		PublicKey:     hpkp,
