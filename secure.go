@@ -17,6 +17,7 @@ const (
 	xssProtectionHeader = "X-XSS-Protection"
 	xssProtectionValue  = "1; mode=block"
 	cspHeader           = "Content-Security-Policy"
+	hpkpHeader          = "Public-Key-Pins"
 )
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +54,8 @@ type Options struct {
 	BrowserXssFilter bool
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
 	ContentSecurityPolicy string
+	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
+	PublicKey string
 	// When developing, the AllowedHosts, SSL, and STS options can cause some unwanted effects. Usually testing happens on http, not https, and on localhost, not your production domain... so set this to true for dev environment.
 	// If you would like your development environment to mimic production with complete Host blocking, SSL redirects, and STS headers, leave this as false. Default if false.
 	IsDevelopment bool
@@ -133,10 +136,8 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Determine if we are on HTTPS.
-	isSSL := false
-	if strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil {
-		isSSL = true
-	} else {
+	isSSL := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
+	if !isSSL {
 		for k, v := range s.opt.SSLProxyHeaders {
 			if r.Header.Get(k) == v {
 				isSSL = true
@@ -194,6 +195,11 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	// XSS Protection header.
 	if s.opt.BrowserXssFilter {
 		w.Header().Add(xssProtectionHeader, xssProtectionValue)
+	}
+
+	// HPKP header.
+	if len(s.opt.PublicKey) > 0 && isSSL && !s.opt.IsDevelopment {
+		w.Header().Add(hpkpHeader, s.opt.PublicKey)
 	}
 
 	// Content Security Policy header.

@@ -538,6 +538,53 @@ func TestInlineSecure(t *testing.T) {
 	expect(t, res.Header().Get("X-Frame-Options"), "DENY")
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/Security/Public_Key_Pinning
+const hpkp = `pin-sha256="cUPcTAZWKaASuYWhhneDttWpY3oBAkE3h2+soZS7sWs="; pin-sha256="M8HztCzM3elUxkcjR2S5P4hhyBNf6lHkmjAHKhpGPWE="; max-age=5184000; includeSubdomains; report-uri="https://www.example.net/hpkp-report"`
+
+func TestHPKP(t *testing.T) {
+	s := New(Options{
+		PublicKey: hpkp,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.URL.Scheme = "https"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Public-Key-Pins"), hpkp)
+}
+
+func TestHPKPInDevMode(t *testing.T) {
+	s := New(Options{
+		PublicKey:     hpkp,
+		IsDevelopment: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Public-Key-Pins"), "")
+}
+
+func TestHPKPNonSSL(t *testing.T) {
+	s := New(Options{
+		PublicKey: hpkp,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Public-Key-Pins"), "")
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
