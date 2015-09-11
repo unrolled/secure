@@ -136,7 +136,7 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Determine if we are on HTTPS.
-	isSSL := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
+	isSSL := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 	if !isSSL {
 		for k, v := range s.opt.SSLProxyHeaders {
 			if r.Header.Get(k) == v {
