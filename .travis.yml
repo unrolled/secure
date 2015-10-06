@@ -6,8 +6,5 @@ go:
   - 1.5
   - tip
 
-install:
-  - go get github.com/codegangsta/negroni
-
 script:
-  - go test -v ./... -tags=integration -race
+  - go test -v ./... -race
