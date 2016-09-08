@@ -158,6 +158,10 @@ The STS header will only be sent on verified HTTPS connections (and when `IsDeve
 
 * The `preload` flag is required for domain inclusion in Chrome's [preload](https://hstspreload.appspot.com/) list.
 
+### Content Security Policy
+If you need dynamic support for CSP while using Websockets, check out this other middleware [awakenetworks/csp](https://github.com/awakenetworks/csp).  
+
+
 ## Integration examples
 
 ### [Echo](https://github.com/labstack/echo)
