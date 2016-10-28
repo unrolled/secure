@@ -213,10 +213,14 @@ func main() {
 
             // If there was an error, do not continue.
             if err != nil {
+	    	c.Abort()
                 return
             }
-
-            c.Next()
+	    
+	    // Avoid header rewrite if response is a redirection.
+	    if status := c.Writer.Status(); status > 300 && status < 399 {
+	    	c.Abort()
+            }
         }
     }()
 
