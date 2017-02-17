@@ -164,6 +164,34 @@ If you need dynamic support for CSP while using Websockets, check out this other
 
 ## Integration examples
 
+### [chi](https://github.com/pressly/chi)
+~~~ go
+// main.go
+package main
+
+import (
+	"net/http"
+
+	"github.com/pressly/chi"
+	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+)
+
+func main() {
+	secureMiddleware := secure.New(secure.Options{
+		FrameDeny: true,
+	})
+
+	r := chi.NewRouter()
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("X-Frame-Options header is now `DENY`."))
+	})
+	r.Use(secureMiddleware.Handler)
+
+	http.ListenAndServe("127.0.0.1:3000", r)
+}
+~~~
+
 ### [Echo](https://github.com/labstack/echo)
 ~~~ go
 // main.go
