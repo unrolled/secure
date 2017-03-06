@@ -76,6 +76,7 @@ s := secure.New(secure.Options{
     BrowserXssFilter: true, // If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
     ContentSecurityPolicy: "default-src 'self'", // ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
     PublicKey: `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`, // PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
+    ReferrerPolicy: "same-origin" // ReferrerPolicy allows the Referrer-Policy header with the value to be set with a custom value. Default is "".
 
     IsDevelopment: true, // This will cause the AllowedHosts, SSLRedirect, and STSSeconds/STSIncludeSubdomains options to be ignored during development. When deploying to production, be sure to set this to false.
 })
@@ -106,6 +107,7 @@ l := secure.New(secure.Options{
     BrowserXssFilter: false,
     ContentSecurityPolicy: "",
     PublicKey: "",
+    ReferrerPolicy: ""
     IsDevelopment: false,
 })
 ~~~

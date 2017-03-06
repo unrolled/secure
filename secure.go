@@ -7,17 +7,18 @@ import (
 )
 
 const (
-	stsHeader           = "Strict-Transport-Security"
-	stsSubdomainString  = "; includeSubdomains"
-	stsPreloadString    = "; preload"
-	frameOptionsHeader  = "X-Frame-Options"
-	frameOptionsValue   = "DENY"
-	contentTypeHeader   = "X-Content-Type-Options"
-	contentTypeValue    = "nosniff"
-	xssProtectionHeader = "X-XSS-Protection"
-	xssProtectionValue  = "1; mode=block"
-	cspHeader           = "Content-Security-Policy"
-	hpkpHeader          = "Public-Key-Pins"
+	stsHeader            = "Strict-Transport-Security"
+	stsSubdomainString   = "; includeSubdomains"
+	stsPreloadString     = "; preload"
+	frameOptionsHeader   = "X-Frame-Options"
+	frameOptionsValue    = "DENY"
+	contentTypeHeader    = "X-Content-Type-Options"
+	contentTypeValue     = "nosniff"
+	xssProtectionHeader  = "X-XSS-Protection"
+	xssProtectionValue   = "1; mode=block"
+	cspHeader            = "Content-Security-Policy"
+	hpkpHeader           = "Public-Key-Pins"
+	referrerPolicyHeader = "Referrer-Policy"
 )
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +57,8 @@ type Options struct {
 	ContentSecurityPolicy string
 	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
 	PublicKey string
+	// Referrer Policy allows sites to control when browsers will pass the Referer header to other sites. Default is "".
+	ReferrerPolicy string
 	// When developing, the AllowedHosts, SSL, and STS options can cause some unwanted effects. Usually testing happens on http, not https, and on localhost, not your production domain... so set this to true for dev environment.
 	// If you would like your development environment to mimic production with complete Host blocking, SSL redirects, and STS headers, leave this as false. Default if false.
 	IsDevelopment bool
@@ -205,6 +208,11 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	// Content Security Policy header.
 	if len(s.opt.ContentSecurityPolicy) > 0 {
 		w.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
+	}
+
+	// Referrer Policy header.
+	if len(s.opt.ReferrerPolicy) > 0 {
+		w.Header().Add(referrerPolicyHeader, s.opt.ReferrerPolicy)
 	}
 
 	return nil
