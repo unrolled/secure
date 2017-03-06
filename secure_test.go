@@ -597,6 +597,20 @@ func TestHPKPNonSSL(t *testing.T) {
 	expect(t, res.Header().Get("Public-Key-Pins"), "")
 }
 
+func TestReferrer(t *testing.T) {
+	s := New(Options{
+		ReferrerPolicy: "same-origin",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Referrer-Policy"), "same-origin")
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
