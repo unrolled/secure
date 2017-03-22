@@ -67,6 +67,39 @@ func TestBadSingleAllowHosts(t *testing.T) {
 	expect(t, res.Code, http.StatusInternalServerError)
 }
 
+func TestGoodSingleAllowHostsProxyHeaders(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:      []string{"www.example.com"},
+		HostsProxyHeaders: []string{"X-Proxy-Host"},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "example-internal"
+	req.Header.Set("X-Proxy-Host", "www.example.com")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
+func TestBadSingleAllowHostsProxyHeaders(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:      []string{"sub.example.com"},
+		HostsProxyHeaders: []string{"X-Proxy-Host"},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "example-internal"
+	req.Header.Set("X-Proxy-Host", "www.example.com")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusInternalServerError)
+}
+
 func TestGoodMultipleAllowHosts(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{"www.example.com", "sub.example.com"},
