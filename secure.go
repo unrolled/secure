@@ -124,16 +124,17 @@ func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, nex
 
 // Process runs the actual checks and returns an error if the middleware chain should stop.
 func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
+	// resolve the host for the request, using proxy headers if present
+	host := r.Host
+	for _, header := range s.opt.HostsProxyHeaders {
+		if h := r.Header.Get(header); h != "" {
+			host = h
+			break
+		}
+	}
+
 	// Allowed hosts check.
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
-		host := r.Host
-		for _, header := range s.opt.HostsProxyHeaders {
-			if h := r.Header.Get(header); h != "" {
-				host = h
-				break
-			}
-		}
-
 		isGoodHost := false
 		for _, allowedHost := range s.opt.AllowedHosts {
 			if strings.EqualFold(allowedHost, host) {
@@ -163,7 +164,7 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	if s.opt.SSLRedirect && !isSSL && !s.opt.IsDevelopment {
 		url := r.URL
 		url.Scheme = "https"
-		url.Host = r.Host
+		url.Host = host
 
 		if len(s.opt.SSLHost) > 0 {
 			url.Host = s.opt.SSLHost
