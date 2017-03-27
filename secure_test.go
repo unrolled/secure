@@ -67,6 +67,39 @@ func TestBadSingleAllowHosts(t *testing.T) {
 	expect(t, res.Code, http.StatusInternalServerError)
 }
 
+func TestGoodSingleAllowHostsProxyHeaders(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:      []string{"www.example.com"},
+		HostsProxyHeaders: []string{"X-Proxy-Host"},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "example-internal"
+	req.Header.Set("X-Proxy-Host", "www.example.com")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
+func TestBadSingleAllowHostsProxyHeaders(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:      []string{"sub.example.com"},
+		HostsProxyHeaders: []string{"X-Proxy-Host"},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "example-internal"
+	req.Header.Set("X-Proxy-Host", "www.example.com")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusInternalServerError)
+}
+
 func TestGoodMultipleAllowHosts(t *testing.T) {
 	s := New(Options{
 		AllowedHosts: []string{"www.example.com", "sub.example.com"},
@@ -248,6 +281,26 @@ func TestCustomProxySSLInDevMode(t *testing.T) {
 	s.Handler(myHandler).ServeHTTP(res, req)
 
 	expect(t, res.Code, http.StatusOK)
+}
+
+func TestCustomProxyAndHostProxyHeadersWithRedirect(t *testing.T) {
+	s := New(Options{
+		HostsProxyHeaders: []string{"X-Forwarded-Host"},
+		SSLRedirect:       true,
+		SSLProxyHeaders:   map[string]string{"X-Forwarded-Proto": "http"},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "example-internal"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
+	req.Header.Add("X-Forwarded-Host", "www.example.com")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://www.example.com/foo")
 }
 
 func TestCustomProxyAndHostSSL(t *testing.T) {

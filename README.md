@@ -21,6 +21,7 @@ var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 func main() {
 	secureMiddleware := secure.New(secure.Options{
 		AllowedHosts:          []string{"example.com", "ssl.example.com"},
+        HostsProxyHeaders:     []string{"X-Forwarded-Host"},
 		SSLRedirect:           true,
 		SSLHost:               "ssl.example.com",
 		SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
@@ -62,6 +63,7 @@ Secure comes with a variety of configuration options (Note: these are not the de
 // ...
 s := secure.New(secure.Options{
     AllowedHosts: []string{"ssl.example.com"}, // AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
+    HostsProxyHeaders: []string{"X-Forwarded-Hosts"}, // HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
     SSLRedirect: true, // If SSLRedirect is set to true, then only allow HTTPS requests. Default is false.
     SSLTemporaryRedirect: false, // If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
     SSLHost: "ssl.example.com", // SSLHost is the host name that is used to redirect HTTP requests to HTTPS. Default is "", which indicates to use the same host.
@@ -93,6 +95,7 @@ s := secure.New()
 
 l := secure.New(secure.Options{
     AllowedHosts: []string,
+    HostsProxyHeaders: []string,
     SSLRedirect: false,
     SSLTemporaryRedirect: false,
     SSLHost: "",

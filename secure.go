@@ -29,6 +29,8 @@ func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
 type Options struct {
 	// AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
 	AllowedHosts []string
+	// HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
+	HostsProxyHeaders []string
 	// If SSLRedirect is set to true, then only allow https requests. Default is false.
 	SSLRedirect bool
 	// If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
@@ -122,11 +124,20 @@ func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, nex
 
 // Process runs the actual checks and returns an error if the middleware chain should stop.
 func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
+	// Resolve the host for the request, using proxy headers if present.
+	host := r.Host
+	for _, header := range s.opt.HostsProxyHeaders {
+		if h := r.Header.Get(header); h != "" {
+			host = h
+			break
+		}
+	}
+
 	// Allowed hosts check.
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
 		for _, allowedHost := range s.opt.AllowedHosts {
-			if strings.EqualFold(allowedHost, r.Host) {
+			if strings.EqualFold(allowedHost, host) {
 				isGoodHost = true
 				break
 			}
@@ -134,7 +145,7 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 
 		if !isGoodHost {
 			s.badHostHandler.ServeHTTP(w, r)
-			return fmt.Errorf("Bad host name: %s", r.Host)
+			return fmt.Errorf("Bad host name: %s", host)
 		}
 	}
 
@@ -153,7 +164,7 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	if s.opt.SSLRedirect && !isSSL && !s.opt.IsDevelopment {
 		url := r.URL
 		url.Scheme = "https"
-		url.Host = r.Host
+		url.Host = host
 
 		if len(s.opt.SSLHost) > 0 {
 			url.Host = s.opt.SSLHost
