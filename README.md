@@ -21,7 +21,7 @@ var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 func main() {
 	secureMiddleware := secure.New(secure.Options{
 		AllowedHosts:          []string{"example.com", "ssl.example.com"},
-        HostsProxyHeaders:     []string{"X-Forwarded-Host"},
+        	HostsProxyHeaders:     []string{"X-Forwarded-Host"},
 		SSLRedirect:           true,
 		SSLHost:               "ssl.example.com",
 		SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
