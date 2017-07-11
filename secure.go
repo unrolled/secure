@@ -49,12 +49,14 @@ type Options struct {
 	ForceSTSHeader bool
 	// If FrameDeny is set to true, adds the X-Frame-Options header with the value of `DENY`. Default is false.
 	FrameDeny bool
-	// CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option.
+	// CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option. Default is "".
 	CustomFrameOptionsValue string
 	// If ContentTypeNosniff is true, adds the X-Content-Type-Options header with the value `nosniff`. Default is false.
 	ContentTypeNosniff bool
 	// If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
 	BrowserXssFilter bool
+	// CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
+	CustomBrowserXssValue string
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
 	ContentSecurityPolicy string
 	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
@@ -207,7 +209,9 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// XSS Protection header.
-	if s.opt.BrowserXssFilter {
+	if len(s.opt.CustomBrowserXssValue) > 0 {
+		w.Header().Add(xssProtectionHeader, s.opt.CustomBrowserXssValue)
+	} else if s.opt.BrowserXssFilter {
 		w.Header().Add(xssProtectionHeader, xssProtectionValue)
 	}
 

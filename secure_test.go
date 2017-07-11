@@ -558,6 +558,37 @@ func TestXSSProtection(t *testing.T) {
 	expect(t, res.Header().Get("X-XSS-Protection"), "1; mode=block")
 }
 
+func TestCustomXSSProtection(t *testing.T) {
+	xssVal := "1; report=https://example.com"
+	s := New(Options{
+		CustomBrowserXssValue: xssVal,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-XSS-Protection"), xssVal)
+}
+
+func TestBothXSSProtection(t *testing.T) {
+	xssVal := "0"
+	s := New(Options{
+		BrowserXssFilter:      true,
+		CustomBrowserXssValue: xssVal,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-XSS-Protection"), xssVal)
+}
+
 func TestCsp(t *testing.T) {
 	s := New(Options{
 		ContentSecurityPolicy: "default-src 'self'",
