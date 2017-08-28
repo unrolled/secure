@@ -154,7 +154,7 @@ func main() {
 
 	// HTTPS
 	// To generate a development cert and key, run the following from your *nix terminal:
-	// go run $GOROOT/src/pkg/crypto/tls/generate_cert.go --host="localhost"
+	// go run $GOROOT/src/crypto/tls/generate_cert.go --host="localhost"
 	log.Fatal(http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", app))
 }
 ~~~
