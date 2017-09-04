@@ -216,14 +216,12 @@ func main() {
 	})
 
 	e := echo.New()
-
-	e.Get("/", func(c *echo.Context) error {
-		c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
-		return nil
+	e.GET("/", func(c echo.Context) error {
+		return c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
 	})
-	e.Use(secureMiddleware.Handler)
 
-	e.Run("127.0.0.1:3000")
+	e.Use(echo.WrapMiddleware(secureMiddleware.Handler))
+	e.Logger.Fatal(e.Start("127.0.0.1:3000"))
 }
 ~~~
 
