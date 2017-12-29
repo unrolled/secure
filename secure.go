@@ -1,9 +1,14 @@
 package secure
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
+	"text/template"
+	"time"
 )
 
 const (
@@ -58,7 +63,11 @@ type Options struct {
 	// CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
 	CustomBrowserXssValue string
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
+	// Passing a template string will replace `{{ . }}` with a dynamic nonce value for each request which can be later retrieved using the Nonce function.
+	// Eg: script-src {{ . }} -> script-src 'nonce-a2ZobGFoZg=='
 	ContentSecurityPolicy string
+	// CSPNonceByteAmount is the byte size of the base64 nonce string being generated default is 16.
+	CSPNonceByteAmount int
 	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
 	PublicKey string
 	// Referrer Policy allows sites to control when browsers will pass the Referer header to other sites. Default is "".
@@ -66,6 +75,8 @@ type Options struct {
 	// When developing, the AllowedHosts, SSL, and STS options can cause some unwanted effects. Usually testing happens on http, not https, and on localhost, not your production domain... so set this to true for dev environment.
 	// If you would like your development environment to mimic production with complete Host blocking, SSL redirects, and STS headers, leave this as false. Default if false.
 	IsDevelopment bool
+
+	nonceEnabled bool
 }
 
 // Secure is a middleware that helps setup a few basic security features. A single secure.Options struct can be
@@ -87,6 +98,22 @@ func New(options ...Options) *Secure {
 		o = options[0]
 	}
 
+	tmpl := template.Must(template.New("csp").Parse(o.ContentSecurityPolicy))
+
+	var buffer bytes.Buffer
+
+	if err := tmpl.Execute(&buffer, "'nonce-%[1]s'"); err != nil {
+		panic(err)
+	}
+
+	o.ContentSecurityPolicy = buffer.String()
+
+	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s")
+
+	if o.CSPNonceByteAmount <= 0 {
+		o.CSPNonceByteAmount = 16
+	}
+
 	return &Secure{
 		opt:            o,
 		badHostHandler: http.HandlerFunc(defaultBadHostHandler),
@@ -101,6 +128,11 @@ func (s *Secure) SetBadHostHandler(handler http.Handler) {
 // Handler implements the http.HandlerFunc for integration with the standard net/http lib.
 func (s *Secure) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.opt.nonceEnabled {
+			ctx := context.WithValue(r.Context(), nonceKey, randNonce(rand.NewSource(time.Now().UnixNano()), s.opt.CSPNonceByteAmount))
+			*r = *r.WithContext(ctx)
+		}
+
 		// Let secure process the request. If it returns an error,
 		// that indicates the request should not continue.
 		err := s.Process(w, r)
@@ -222,7 +254,11 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 
 	// Content Security Policy header.
 	if len(s.opt.ContentSecurityPolicy) > 0 {
-		w.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
+		if s.opt.nonceEnabled {
+			w.Header().Add(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, Nonce(r)))
+		} else {
+			w.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
+		}
 	}
 
 	// Referrer Policy header.
@@ -231,4 +267,48 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
+}
+
+// Nonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
+func Nonce(r *http.Request) string {
+	if val, ok := r.Context().Value(nonceKey).(string); ok {
+		return val
+	}
+
+	return ""
+}
+
+type key int
+
+const nonceKey key = iota
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/+"
+const (
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+)
+
+func randNonce(src rand.Source, byteLen int) string {
+
+	n := (byteLen*8 + 5) / 6
+
+	b := make([]byte, (n+3) & ^3)
+	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	for i := len(b) - n; i > 0; i-- {
+		b[n+i-1] = '='
+	}
+
+	return string(b)
 }
