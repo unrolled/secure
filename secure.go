@@ -1,14 +1,13 @@
 package secure
 
 import (
-	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
-	"math/rand"
+	"io"
 	"net/http"
 	"strings"
-	"text/template"
-	"time"
 )
 
 const (
@@ -24,6 +23,8 @@ const (
 	cspHeader            = "Content-Security-Policy"
 	hpkpHeader           = "Public-Key-Pins"
 	referrerPolicyHeader = "Referrer-Policy"
+
+	cspNonceSize = 16
 )
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
@@ -63,11 +64,9 @@ type Options struct {
 	// CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
 	CustomBrowserXssValue string
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
-	// Passing a template string will replace `{{ . }}` with a dynamic nonce value for each request which can be later retrieved using the Nonce function.
-	// Eg: script-src {{ . }} -> script-src 'nonce-a2ZobGFoZg=='
+	// Passing a template string will replace `$NONCE` with a dynamic nonce value of 16 bytes for each request which can be later retrieved using the Nonce function.
+	// Eg: script-src $NONCE -> script-src 'nonce-a2ZobGFoZg=='
 	ContentSecurityPolicy string
-	// CSPNonceByteAmount is the byte size of the base64 nonce string being generated default is 16.
-	CSPNonceByteAmount int
 	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
 	PublicKey string
 	// Referrer Policy allows sites to control when browsers will pass the Referer header to other sites. Default is "".
@@ -98,21 +97,9 @@ func New(options ...Options) *Secure {
 		o = options[0]
 	}
 
-	tmpl := template.Must(template.New("csp").Parse(o.ContentSecurityPolicy))
-
-	var buffer bytes.Buffer
-
-	if err := tmpl.Execute(&buffer, "'nonce-%[1]s'"); err != nil {
-		panic(err)
-	}
-
-	o.ContentSecurityPolicy = buffer.String()
+	o.ContentSecurityPolicy = strings.Replace(o.ContentSecurityPolicy, "$NONCE", "'nonce-%[1]s'", -1)
 
 	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s")
-
-	if o.CSPNonceByteAmount <= 0 {
-		o.CSPNonceByteAmount = 16
-	}
 
 	return &Secure{
 		opt:            o,
@@ -129,7 +116,7 @@ func (s *Secure) SetBadHostHandler(handler http.Handler) {
 func (s *Secure) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.opt.nonceEnabled {
-			ctx := context.WithValue(r.Context(), nonceKey, randNonce(rand.NewSource(time.Now().UnixNano()), s.opt.CSPNonceByteAmount))
+			ctx := context.WithValue(r.Context(), nonceKey, randNonce())
 			*r = *r.WithContext(ctx)
 		}
 
@@ -255,7 +242,7 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	// Content Security Policy header.
 	if len(s.opt.ContentSecurityPolicy) > 0 {
 		if s.opt.nonceEnabled {
-			w.Header().Add(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, Nonce(r)))
+			w.Header().Add(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, CSPNonce(r.Context())))
 		} else {
 			w.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
 		}
@@ -269,9 +256,9 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// Nonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
-func Nonce(r *http.Request) string {
-	if val, ok := r.Context().Value(nonceKey).(string); ok {
+// CSPNonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
+func CSPNonce(c context.Context) string {
+	if val, ok := c.Value(nonceKey).(string); ok {
 		return val
 	}
 
@@ -282,33 +269,13 @@ type key int
 
 const nonceKey key = iota
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/+"
-const (
-	letterIdxBits = 6                    // 6 bits to represent a letter index
-	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
-	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
-)
+func randNonce() string {
 
-func randNonce(src rand.Source, byteLen int) string {
-
-	n := (byteLen*8 + 5) / 6
-
-	b := make([]byte, (n+3) & ^3)
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
+	var buf [cspNonceSize]byte
+	_, err := io.ReadFull(rand.Reader, buf[:])
+	if err != nil {
+		panic("entropy failed " + err.Error())
 	}
 
-	for i := len(b) - n; i > 0; i-- {
-		b[n+i-1] = '='
-	}
-
-	return string(b)
+	return base64.RawStdEncoding.EncodeToString(buf[:])
 }
