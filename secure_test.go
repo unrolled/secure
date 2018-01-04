@@ -1,8 +1,6 @@
 package secure
 
 import (
-	"encoding/base64"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -603,21 +601,6 @@ func TestCsp(t *testing.T) {
 
 	expect(t, res.Code, http.StatusOK)
 	expect(t, res.Header().Get("Content-Security-Policy"), "default-src 'self'")
-}
-
-func TestCspNonce(t *testing.T) {
-	s := New(Options{
-		ContentSecurityPolicy: "default-src 'self' $NONCE; script-src 'strict-dynamic' $NONCE",
-	})
-
-	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/foo", nil)
-
-	s.Handler(myHandler).ServeHTTP(res, req)
-
-	expect(t, res.Code, http.StatusOK)
-	expect(t, len(CSPNonce(req.Context())), base64.RawStdEncoding.EncodedLen(cspNonceSize))
-	expect(t, res.Header().Get("Content-Security-Policy"), fmt.Sprintf("default-src 'self' 'nonce-%[1]s'; script-src 'strict-dynamic' 'nonce-%[1]s'", CSPNonce(req.Context())))
 }
 
 func TestInlineSecure(t *testing.T) {

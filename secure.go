@@ -1,11 +1,7 @@
 package secure
 
 import (
-	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 )
@@ -116,8 +112,7 @@ func (s *Secure) SetBadHostHandler(handler http.Handler) {
 func (s *Secure) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.opt.nonceEnabled {
-			ctx := context.WithValue(r.Context(), nonceKey, randNonce())
-			*r = *r.WithContext(ctx)
+			r = withCSPNonce(r, cspRandNonce())
 		}
 
 		// Let secure process the request. If it returns an error,
@@ -254,28 +249,4 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
-}
-
-// CSPNonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
-func CSPNonce(c context.Context) string {
-	if val, ok := c.Value(nonceKey).(string); ok {
-		return val
-	}
-
-	return ""
-}
-
-type key int
-
-const nonceKey key = iota
-
-func randNonce() string {
-
-	var buf [cspNonceSize]byte
-	_, err := io.ReadFull(rand.Reader, buf[:])
-	if err != nil {
-		panic("entropy failed " + err.Error())
-	}
-
-	return base64.RawStdEncoding.EncodeToString(buf[:])
 }
