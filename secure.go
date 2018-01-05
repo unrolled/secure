@@ -19,6 +19,8 @@ const (
 	cspHeader            = "Content-Security-Policy"
 	hpkpHeader           = "Public-Key-Pins"
 	referrerPolicyHeader = "Referrer-Policy"
+
+	cspNonceSize = 16
 )
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +60,8 @@ type Options struct {
 	// CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
 	CustomBrowserXssValue string
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
+	// Passing a template string will replace `$NONCE` with a dynamic nonce value of 16 bytes for each request which can be later retrieved using the Nonce function.
+	// Eg: script-src $NONCE -> script-src 'nonce-a2ZobGFoZg=='
 	ContentSecurityPolicy string
 	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
 	PublicKey string
@@ -66,6 +70,8 @@ type Options struct {
 	// When developing, the AllowedHosts, SSL, and STS options can cause some unwanted effects. Usually testing happens on http, not https, and on localhost, not your production domain... so set this to true for dev environment.
 	// If you would like your development environment to mimic production with complete Host blocking, SSL redirects, and STS headers, leave this as false. Default if false.
 	IsDevelopment bool
+
+	nonceEnabled bool
 }
 
 // Secure is a middleware that helps setup a few basic security features. A single secure.Options struct can be
@@ -87,6 +93,10 @@ func New(options ...Options) *Secure {
 		o = options[0]
 	}
 
+	o.ContentSecurityPolicy = strings.Replace(o.ContentSecurityPolicy, "$NONCE", "'nonce-%[1]s'", -1)
+
+	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s")
+
 	return &Secure{
 		opt:            o,
 		badHostHandler: http.HandlerFunc(defaultBadHostHandler),
@@ -101,6 +111,10 @@ func (s *Secure) SetBadHostHandler(handler http.Handler) {
 // Handler implements the http.HandlerFunc for integration with the standard net/http lib.
 func (s *Secure) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.opt.nonceEnabled {
+			r = withCSPNonce(r, cspRandNonce())
+		}
+
 		// Let secure process the request. If it returns an error,
 		// that indicates the request should not continue.
 		err := s.Process(w, r)
@@ -222,7 +236,11 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 
 	// Content Security Policy header.
 	if len(s.opt.ContentSecurityPolicy) > 0 {
-		w.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
+		if s.opt.nonceEnabled {
+			w.Header().Add(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, CSPNonce(r.Context())))
+		} else {
+			w.Header().Add(cspHeader, s.opt.ContentSecurityPolicy)
+		}
 	}
 
 	// Referrer Policy header.
