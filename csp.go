@@ -22,11 +22,10 @@ type key int
 const cspNonceKey key = iota
 
 func cspRandNonce() string {
-
 	var buf [cspNonceSize]byte
 	_, err := io.ReadFull(rand.Reader, buf[:])
 	if err != nil {
-		panic("entropy failed " + err.Error())
+		panic("CSP Nonce rand.Reader failed" + err.Error())
 	}
 
 	return base64.RawStdEncoding.EncodeToString(buf[:])
