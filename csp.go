@@ -8,6 +8,10 @@ import (
 	"net/http"
 )
 
+type key int
+
+const cspNonceKey key = iota
+
 // CSPNonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
 func CSPNonce(c context.Context) string {
 	if val, ok := c.Value(cspNonceKey).(string); ok {
@@ -17,9 +21,17 @@ func CSPNonce(c context.Context) string {
 	return ""
 }
 
-type key int
+// WithCSPNonce returns a context derived from ctx containing the given nonce as a value.
+//
+// This is intended for testing or more advanced use-cases;
+// for ordinary HTTP handlers, clients can rely on this package's middleware to populate the CSP nonce in the context. 
+func WithCSPNonce(ctx context.Context, nonce string) context.Context {
+	return context.WithValue(ctx, cspNonceKey, nonce)	
+}
 
-const cspNonceKey key = iota
+func withCSPNonce(r *http.Request, nonce string) *http.Request {
+	return r.WithContext(WithCSPNonce(r.Context(), nonce))
+}
 
 func cspRandNonce() string {
 	var buf [cspNonceSize]byte
@@ -29,8 +41,4 @@ func cspRandNonce() string {
 	}
 
 	return base64.RawStdEncoding.EncodeToString(buf[:])
-}
-
-func withCSPNonce(r *http.Request, nonce string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), cspNonceKey, nonce))
 }
