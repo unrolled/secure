@@ -130,6 +130,12 @@ func (s *Secure) Handler(h http.Handler) http.Handler {
 
 // HandlerFuncWithNext is a special implementation for Negroni, but could be used elsewhere.
 func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	if s.opt.nonceEnabled {
+		r = withCSPNonce(r, cspRandNonce())
+	}
+
+	// Let secure process the request. If it returns an error,
+	// that indicates the request should not continue.
 	err := s.Process(w, r)
 
 	// If there was an error, do not call next.
