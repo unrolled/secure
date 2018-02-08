@@ -23,6 +23,8 @@ const (
 	cspNonceSize = 16
 )
 
+type SSLHostFunc func(host string) (newHost string)
+
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Bad Host", http.StatusInternalServerError)
 }
@@ -39,6 +41,9 @@ type Options struct {
 	SSLTemporaryRedirect bool
 	// SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
 	SSLHost string
+	// SSLHostFunc is a function pointer of which the return value is the host name that has same functionality as `SSHost`. Default is nil.
+	// If SSLHostFunc is nil or its return value is an empty string, the `SSLHost` option will be used.
+	SSLHostFunc *SSLHostFunc
 	// SSLProxyHeaders is set of header keys with associated values that would indicate a valid https request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
 	SSLProxyHeaders map[string]string
 	// STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
@@ -188,7 +193,13 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 		url.Scheme = "https"
 		url.Host = host
 
-		if len(s.opt.SSLHost) > 0 {
+		h := ""
+		if s.opt.SSLHostFunc != nil {
+			h = (*s.opt.SSLHostFunc)(host)
+		}
+		if h != "" {
+			url.Host = h
+		} else if len(s.opt.SSLHost) > 0 {
 			url.Host = s.opt.SSLHost
 		}
 
