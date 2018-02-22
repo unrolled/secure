@@ -127,7 +127,6 @@ func (s *Secure) Handler(h http.Handler) http.Handler {
 			return
 		}
 
-		// No headers will be written to the ResponseWriter.
 		h.ServeHTTP(w, r)
 	})
 }
@@ -181,6 +180,7 @@ func (s *Secure) HandlerFuncWithNextForRequestOnly(w http.ResponseWriter, r *htt
 
 	// If there was an error, do not call next.
 	if err == nil && next != nil {
+		// No headers will be written to the ResponseWriter.
 		next(w, r)
 	}
 }
