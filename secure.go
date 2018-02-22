@@ -80,7 +80,7 @@ type Secure struct {
 	// Customize Secure with an Options struct.
 	opt Options
 
-	// Response headers
+	// Response headers.
 	responseHeader http.Header
 
 	// Handlers for when an error occurs (ie bad host).
@@ -127,6 +127,7 @@ func (s *Secure) Handler(h http.Handler) http.Handler {
 			return
 		}
 
+		// No headers will be written to the ResponseWriter.
 		h.ServeHTTP(w, r)
 	})
 }
@@ -147,6 +148,7 @@ func (s *Secure) HandlerForRequestOnly(h http.Handler) http.Handler {
 			return
 		}
 
+		// No headers will be written to the ResponseWriter.
 		h.ServeHTTP(w, r)
 	})
 }
@@ -183,10 +185,14 @@ func (s *Secure) HandlerFuncWithNextForRequestOnly(w http.ResponseWriter, r *htt
 	}
 }
 
-// Process runs the actual checks and returns an error if the middleware chain should stop.
+// Process runs the actual checks and writes the headers in the ResponseWriter.
 func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	err := s.processRequest(w, r)
-	s.prepareResponseWriter(w)
+	for key, values := range s.responseHeader {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
 	return err
 }
 
@@ -296,15 +302,6 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// prepareResponseWriter writes responseHeader into response writer
-func (s *Secure) prepareResponseWriter(w http.ResponseWriter) {
-	for key, values := range s.responseHeader {
-		for _, value := range values {
-			w.Header().Add(key, value)
-		}
-	}
-}
-
 // isSSL determine if we are on HTTPS.
 func (s *Secure) isSSL(r *http.Request) bool {
 	ssl := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
@@ -319,8 +316,8 @@ func (s *Secure) isSSL(r *http.Request) bool {
 	return ssl
 }
 
-// ModifyResponseHeaders modifies the Response
-// Used by http.ReverseProxy
+// ModifyResponseHeaders modifies the Response.
+// Used by http.ReverseProxy.
 func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
 	for header, values := range s.responseHeader {
 		if len(values) > 0 {
