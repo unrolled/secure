@@ -1,6 +1,7 @@
 package secure
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -20,7 +21,8 @@ const (
 	hpkpHeader           = "Public-Key-Pins"
 	referrerPolicyHeader = "Referrer-Policy"
 
-	cspNonceSize = 16
+	ctxSecureHeaderKey = "SecureResponseHeader"
+	cspNonceSize       = 16
 )
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,9 +82,6 @@ type Secure struct {
 	// Customize Secure with an Options struct.
 	opt Options
 
-	// Response headers.
-	responseHeader http.Header
-
 	// Handlers for when an error occurs (ie bad host).
 	badHostHandler http.Handler
 }
@@ -140,15 +139,17 @@ func (s *Secure) HandlerForRequestOnly(h http.Handler) http.Handler {
 
 		// Let secure process the request. If it returns an error,
 		// that indicates the request should not continue.
-		err := s.processRequest(w, r)
+		responseHeader, err := s.processRequest(w, r)
 
 		// If there was an error, do not continue.
 		if err != nil {
 			return
 		}
 
+		// Save response headers in the request context
+		ctx := context.WithValue(r.Context(), ctxSecureHeaderKey, responseHeader)
 		// No headers will be written to the ResponseWriter.
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -176,28 +177,32 @@ func (s *Secure) HandlerFuncWithNextForRequestOnly(w http.ResponseWriter, r *htt
 
 	// Let secure process the request. If it returns an error,
 	// that indicates the request should not continue.
-	err := s.processRequest(w, r)
+	responseHeader, err := s.processRequest(w, r)
 
 	// If there was an error, do not call next.
 	if err == nil && next != nil {
+		// Save response headers in the request context
+		ctx := context.WithValue(r.Context(), ctxSecureHeaderKey, responseHeader)
 		// No headers will be written to the ResponseWriter.
-		next(w, r)
+		next(w, r.WithContext(ctx))
 	}
 }
 
 // Process runs the actual checks and writes the headers in the ResponseWriter.
 func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
-	err := s.processRequest(w, r)
-	for key, values := range s.responseHeader {
-		for _, value := range values {
-			w.Header().Add(key, value)
+	responseHeader, err := s.processRequest(w, r)
+	if responseHeader != nil {
+		for key, values := range responseHeader {
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
 		}
 	}
 	return err
 }
 
 // processRequest runs the actual checks on the request and returns an error if the middleware chain should stop.
-func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) error {
+func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.Header, error) {
 	// Resolve the host for the request, using proxy headers if present.
 	host := r.Host
 	for _, header := range s.opt.HostsProxyHeaders {
@@ -219,7 +224,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) error {
 
 		if !isGoodHost {
 			s.badHostHandler.ServeHTTP(w, r)
-			return fmt.Errorf("bad host name: %s", host)
+			return nil, fmt.Errorf("bad host name: %s", host)
 		}
 	}
 
@@ -242,10 +247,10 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) error {
 		}
 
 		http.Redirect(w, r, url.String(), status)
-		return fmt.Errorf("redirecting to HTTPS")
+		return nil, fmt.Errorf("redirecting to HTTPS")
 	}
 
-	s.responseHeader = make(http.Header)
+	responseHeader := make(http.Header)
 	// Strict Transport Security header. Only add header when we know it's an SSL connection.
 	// See https://tools.ietf.org/html/rfc6797#section-7.2 for details.
 	if s.opt.STSSeconds != 0 && (ssl || s.opt.ForceSTSHeader) && !s.opt.IsDevelopment {
@@ -258,48 +263,48 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) error {
 			stsSub += stsPreloadString
 		}
 
-		s.responseHeader.Set(stsHeader, fmt.Sprintf("max-age=%d%s", s.opt.STSSeconds, stsSub))
+		responseHeader.Set(stsHeader, fmt.Sprintf("max-age=%d%s", s.opt.STSSeconds, stsSub))
 	}
 
 	// Frame Options header.
 	if len(s.opt.CustomFrameOptionsValue) > 0 {
-		s.responseHeader.Set(frameOptionsHeader, s.opt.CustomFrameOptionsValue)
+		responseHeader.Set(frameOptionsHeader, s.opt.CustomFrameOptionsValue)
 	} else if s.opt.FrameDeny {
-		s.responseHeader.Set(frameOptionsHeader, frameOptionsValue)
+		responseHeader.Set(frameOptionsHeader, frameOptionsValue)
 	}
 
 	// Content Type Options header.
 	if s.opt.ContentTypeNosniff {
-		s.responseHeader.Set(contentTypeHeader, contentTypeValue)
+		responseHeader.Set(contentTypeHeader, contentTypeValue)
 	}
 
 	// XSS Protection header.
 	if len(s.opt.CustomBrowserXssValue) > 0 {
-		s.responseHeader.Set(xssProtectionHeader, s.opt.CustomBrowserXssValue)
+		responseHeader.Set(xssProtectionHeader, s.opt.CustomBrowserXssValue)
 	} else if s.opt.BrowserXssFilter {
-		s.responseHeader.Set(xssProtectionHeader, xssProtectionValue)
+		responseHeader.Set(xssProtectionHeader, xssProtectionValue)
 	}
 
 	// HPKP header.
 	if len(s.opt.PublicKey) > 0 && ssl && !s.opt.IsDevelopment {
-		s.responseHeader.Set(hpkpHeader, s.opt.PublicKey)
+		responseHeader.Set(hpkpHeader, s.opt.PublicKey)
 	}
 
 	// Content Security Policy header.
 	if len(s.opt.ContentSecurityPolicy) > 0 {
 		if s.opt.nonceEnabled {
-			s.responseHeader.Set(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, CSPNonce(r.Context())))
+			responseHeader.Set(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, CSPNonce(r.Context())))
 		} else {
-			s.responseHeader.Set(cspHeader, s.opt.ContentSecurityPolicy)
+			responseHeader.Set(cspHeader, s.opt.ContentSecurityPolicy)
 		}
 	}
 
 	// Referrer Policy header.
 	if len(s.opt.ReferrerPolicy) > 0 {
-		s.responseHeader.Set(referrerPolicyHeader, s.opt.ReferrerPolicy)
+		responseHeader.Set(referrerPolicyHeader, s.opt.ReferrerPolicy)
 	}
 
-	return nil
+	return responseHeader, nil
 }
 
 // isSSL determine if we are on HTTPS.
@@ -319,9 +324,14 @@ func (s *Secure) isSSL(r *http.Request) bool {
 // ModifyResponseHeaders modifies the Response.
 // Used by http.ReverseProxy.
 func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
-	for header, values := range s.responseHeader {
-		if len(values) > 0 {
-			res.Header.Set(header, strings.Join(values, ","))
+	if res != nil && res.Request != nil {
+		responseHeader := res.Request.Context().Value(ctxSecureHeaderKey)
+		if responseHeader != nil {
+			for header, values := range responseHeader.(http.Header) {
+				if len(values) > 0 {
+					res.Header.Set(header, strings.Join(values, ","))
+				}
+			}
 		}
 	}
 	return nil
