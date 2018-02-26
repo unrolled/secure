@@ -9,34 +9,34 @@ Secure is an HTTP middleware for Go that facilitates some quick security wins. I
 package main
 
 import (
-	"net/http"
+    "net/http"
 
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hello world"))
+    w.Write([]byte("hello world"))
 })
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
-		AllowedHosts:          []string{"example.com", "ssl.example.com"},
-		HostsProxyHeaders:     []string{"X-Forwarded-Host"},
-		SSLRedirect:           true,
-		SSLHost:               "ssl.example.com",
-		SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
-		STSSeconds:            315360000,
-		STSIncludeSubdomains:  true,
-		STSPreload:            true,
-		FrameDeny:             true,
-		ContentTypeNosniff:    true,
-		BrowserXssFilter:      true,
-		ContentSecurityPolicy: "script-src $NONCE",
-		PublicKey:             `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`,
-	})
+    secureMiddleware := secure.New(secure.Options{
+        AllowedHosts:          []string{"example.com", "ssl.example.com"},
+        HostsProxyHeaders:     []string{"X-Forwarded-Host"},
+        SSLRedirect:           true,
+        SSLHost:               "ssl.example.com",
+        SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
+        STSSeconds:            315360000,
+        STSIncludeSubdomains:  true,
+        STSPreload:            true,
+        FrameDeny:             true,
+        ContentTypeNosniff:    true,
+        BrowserXssFilter:      true,
+        ContentSecurityPolicy: "script-src $NONCE",
+        PublicKey:             `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`,
+    })
 
-	app := secureMiddleware.Handler(myHandler)
-	http.ListenAndServe("127.0.0.1:3000", app)
+    app := secureMiddleware.Handler(myHandler)
+    http.ListenAndServe("127.0.0.1:3000", app)
 }
 ~~~
 
@@ -115,7 +115,7 @@ l := secure.New(secure.Options{
     IsDevelopment: false,
 })
 ~~~
-Also note the default bad host handler throws an error:
+Also note the default bad host handler returns an error:
 ~~~ go
 http.Error(w, "Bad Host", http.StatusInternalServerError)
 ~~~
@@ -129,33 +129,33 @@ If you want to redirect all HTTP requests to HTTPS, you can use the following ex
 package main
 
 import (
-	"log"
-	"net/http"
+    "log"
+    "net/http"
 
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hello world"))
+    w.Write([]byte("hello world"))
 })
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
-		SSLRedirect: true,
-		SSLHost:     "localhost:8443", // This is optional in production. The default behavior is to just redirect the request to the HTTPS protocol. Example: http://github.com/some_page would be redirected to https://github.com/some_page.
-	})
+    secureMiddleware := secure.New(secure.Options{
+        SSLRedirect: true,
+        SSLHost:     "localhost:8443", // This is optional in production. The default behavior is to just redirect the request to the HTTPS protocol. Example: http://github.com/some_page would be redirected to https://github.com/some_page.
+    })
 
-	app := secureMiddleware.Handler(myHandler)
+    app := secureMiddleware.Handler(myHandler)
 
-	// HTTP
-	go func() {
-		log.Fatal(http.ListenAndServe(":8080", app))
-	}()
+    // HTTP
+    go func() {
+        log.Fatal(http.ListenAndServe(":8080", app))
+    }()
 
-	// HTTPS
-	// To generate a development cert and key, run the following from your *nix terminal:
-	// go run $GOROOT/src/crypto/tls/generate_cert.go --host="localhost"
-	log.Fatal(http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", app))
+    // HTTPS
+    // To generate a development cert and key, run the following from your *nix terminal:
+    // go run $GOROOT/src/crypto/tls/generate_cert.go --host="localhost"
+    log.Fatal(http.ListenAndServeTLS(":8443", "cert.pem", "key.pem", app))
 }
 ~~~
 
@@ -167,7 +167,6 @@ The STS header will only be sent on verified HTTPS connections (and when `IsDeve
 ### Content Security Policy
 If you need dynamic support for CSP while using Websockets, check out this other middleware [awakenetworks/csp](https://github.com/awakenetworks/csp).
 
-
 ## Integration examples
 
 ### [chi](https://github.com/pressly/chi)
@@ -176,25 +175,25 @@ If you need dynamic support for CSP while using Websockets, check out this other
 package main
 
 import (
-	"net/http"
+    "net/http"
 
-	"github.com/pressly/chi"
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/pressly/chi"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
-		FrameDeny: true,
-	})
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
 
-	r := chi.NewRouter()
+    r := chi.NewRouter()
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("X-Frame-Options header is now `DENY`."))
-	})
-	r.Use(secureMiddleware.Handler)
+    r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("X-Frame-Options header is now `DENY`."))
+    })
+    r.Use(secureMiddleware.Handler)
 
-	http.ListenAndServe("127.0.0.1:3000", r)
+    http.ListenAndServe("127.0.0.1:3000", r)
 }
 ~~~
 
@@ -204,24 +203,24 @@ func main() {
 package main
 
 import (
-	"net/http"
+    "net/http"
 
-	"github.com/labstack/echo"
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/labstack/echo"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
-		FrameDeny: true,
-	})
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
 
-	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
-	})
+    e := echo.New()
+    e.GET("/", func(c echo.Context) error {
+        return c.String(http.StatusOK, "X-Frame-Options header is now `DENY`.")
+    })
 
-	e.Use(echo.WrapMiddleware(secureMiddleware.Handler))
-	e.Logger.Fatal(e.Start("127.0.0.1:3000"))
+    e.Use(echo.WrapMiddleware(secureMiddleware.Handler))
+    e.Logger.Fatal(e.Start("127.0.0.1:3000"))
 }
 ~~~
 
@@ -231,39 +230,39 @@ func main() {
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/gin-gonic/gin"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
-		FrameDeny: true,
-	})
-	secureFunc := func() gin.HandlerFunc {
-		return func(c *gin.Context) {
-			err := secureMiddleware.Process(c.Writer, c.Request)
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
+    secureFunc := func() gin.HandlerFunc {
+        return func(c *gin.Context) {
+            err := secureMiddleware.Process(c.Writer, c.Request)
 
-			// If there was an error, do not continue.
-			if err != nil {
-				c.Abort()
-				return
-			}
+            // If there was an error, do not continue.
+            if err != nil {
+                c.Abort()
+                return
+            }
 
-			// Avoid header rewrite if response is a redirection.
-			if status := c.Writer.Status(); status > 300 && status < 399 {
-				c.Abort()
-			}
-		}
-	}()
+            // Avoid header rewrite if response is a redirection.
+            if status := c.Writer.Status(); status > 300 && status < 399 {
+                c.Abort()
+            }
+        }
+    }()
 
-	router := gin.Default()
-	router.Use(secureFunc)
+    router := gin.Default()
+    router.Use(secureFunc)
 
-	router.GET("/", func(c *gin.Context) {
-		c.String(200, "X-Frame-Options header is now `DENY`.")
-	})
+    router.GET("/", func(c *gin.Context) {
+        c.String(200, "X-Frame-Options header is now `DENY`.")
+    })
 
-	router.Run("127.0.0.1:3000")
+    router.Run("127.0.0.1:3000")
 }
 ~~~
 
@@ -273,23 +272,23 @@ func main() {
 package main
 
 import (
-	"net/http"
+    "net/http"
 
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
-	"github.com/zenazn/goji"
-	"github.com/zenazn/goji/web"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/zenazn/goji"
+    "github.com/zenazn/goji/web"
 )
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
-		FrameDeny: true,
-	})
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
 
-	goji.Get("/", func(c web.C, w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("X-Frame-Options header is now `DENY`."))
-	})
-	goji.Use(secureMiddleware.Handler)
-	goji.Serve() // Defaults to ":8000".
+    goji.Get("/", func(c web.C, w http.ResponseWriter, req *http.Request) {
+        w.Write([]byte("X-Frame-Options header is now `DENY`."))
+    })
+    goji.Use(secureMiddleware.Handler)
+    goji.Serve() // Defaults to ":8000".
 }
 ~~~
 
@@ -299,33 +298,33 @@ func main() {
 package main
 
 import (
-	"github.com/kataras/iris"
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/kataras/iris"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
-	secureMiddleware := secure.New(secure.Options{
-		FrameDeny: true,
-	})
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
 
-	iris.UseFunc(func(c *iris.Context) {
-		err := secureMiddleware.Process(c.ResponseWriter, c.Request)
+    iris.UseFunc(func(c *iris.Context) {
+        err := secureMiddleware.Process(c.ResponseWriter, c.Request)
 
-		// If there was an error, do not continue.
-		if err != nil {
-			return
-		}
+        // If there was an error, do not continue.
+        if err != nil {
+            return
+        }
 
-		c.Next()
-	})
+        c.Next()
+    })
 
-	iris.Get("/home", func(c *iris.Context) {
-		c.SendStatus(200, "X-Frame-Options header is now `DENY`.")
-	})
+    iris.Get("/home", func(c *iris.Context) {
+        c.SendStatus(200, "X-Frame-Options header is now `DENY`.")
+    })
 
-	iris.Listen(":8080")
+    iris.Listen(":8080")
 }
-~~~~
+~~~
 
 ### [Negroni](https://github.com/codegangsta/negroni)
 Note this implementation has a special helper function called `HandlerFuncWithNext`.
@@ -334,27 +333,27 @@ Note this implementation has a special helper function called `HandlerFuncWithNe
 package main
 
 import (
-	"net/http"
+    "net/http"
 
-	"github.com/codegangsta/negroni"
-	"github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
+    "github.com/codegangsta/negroni"
+    "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("X-Frame-Options header is now `DENY`."))
-	})
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+        w.Write([]byte("X-Frame-Options header is now `DENY`."))
+    })
 
-	secureMiddleware := secure.New(secure.Options{
-		FrameDeny: true,
-	})
+    secureMiddleware := secure.New(secure.Options{
+        FrameDeny: true,
+    })
 
-	n := negroni.Classic()
-	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
-	n.UseHandler(mux)
+    n := negroni.Classic()
+    n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
+    n.UseHandler(mux)
 
-	n.Run("127.0.0.1:3000")
+    n.Run("127.0.0.1:3000")
 }
 ~~~
 
