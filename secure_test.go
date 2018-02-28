@@ -236,6 +236,7 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 		isServerDown := false
 		return func(host string) (newHost string) {
 			if isServerDown == true {
+				newHost = "404.example.com"
 				return
 			}
 			if host == "www.example.com" {
@@ -248,7 +249,6 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 	})()
 	s := New(Options{
 		SSLRedirect: true,
-		SSLHost:     "404.example.com",
 		SSLHostFunc: &sslHostFunc,
 	})
 
@@ -273,6 +273,17 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 
 	expect(t, res.Code, http.StatusMovedPermanently)
 	expect(t, res.Header().Get("Location"), "https://secure.example.org/foo")
+
+	// test other
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.other.com"
+	req.URL.Scheme = "http"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://www.other.com/foo")
 }
 
 func TestBadProxySSL(t *testing.T) {
