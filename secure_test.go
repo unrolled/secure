@@ -232,6 +232,61 @@ func TestBasicSSLWithHost(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo")
 }
 
+func TestBasicSSLWithHostFunc(t *testing.T) {
+	sslHostFunc := (func() SSLHostFunc {
+		isServerDown := false
+		return func(host string) (newHost string) {
+			if isServerDown == true {
+				newHost = "404.example.com"
+				return
+			}
+			if host == "www.example.com" {
+				newHost = "secure.example.com:8443"
+			} else if host == "www.example.org" {
+				newHost = "secure.example.org"
+			}
+			return
+		}
+	})()
+	s := New(Options{
+		SSLRedirect: true,
+		SSLHostFunc: &sslHostFunc,
+	})
+
+	// test www.example.com
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://secure.example.com:8443/foo")
+
+	// test www.example.org
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.org"
+	req.URL.Scheme = "http"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://secure.example.org/foo")
+
+	// test other
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.other.com"
+	req.URL.Scheme = "http"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://www.other.com/foo")
+}
+
 func TestBadProxySSL(t *testing.T) {
 	s := New(Options{
 		SSLRedirect: true,
