@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+type secureCtxKey string
+
 const (
 	stsHeader            = "Strict-Transport-Security"
 	stsSubdomainString   = "; includeSubdomains"
@@ -21,7 +23,7 @@ const (
 	hpkpHeader           = "Public-Key-Pins"
 	referrerPolicyHeader = "Referrer-Policy"
 
-	ctxSecureHeaderKey = "SecureResponseHeader"
+	ctxSecureHeaderKey = secureCtxKey("SecureResponseHeader")
 	cspNonceSize       = 16
 )
 
