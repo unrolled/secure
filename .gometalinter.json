@@ -1,0 +1,7 @@
+{
+  "Vendor": true,
+  "Sort": ["path", "line", "column",  "linter", "severity"],
+
+  "Cyclo": 15,
+  "Disable": ["gas", "maligned", "gocyclo"]
+}

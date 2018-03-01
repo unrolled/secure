@@ -6,8 +6,10 @@ go:
   - 1.9.x
   - tip
 
-install:
+before_install:
+  # test dependency
   - go get github.com/codegangsta/negroni
+  # Install linters
+  - go get -u github.com/alecthomas/gometalinter
+  - gometalinter --install
 
-script:
-  - go test -v -race -tags=integration
