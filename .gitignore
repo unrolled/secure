@@ -24,3 +24,5 @@ _testmain.go
 
 *.pem
 .DS_Store
+
+vendor/

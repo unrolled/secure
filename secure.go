@@ -27,7 +27,7 @@ const (
 	cspNonceSize       = 16
 )
 
-// a type whose pointer is the type of field `SSLHostFunc` of `Options` struct
+// SSLHostFunc a type whose pointer is the type of field `SSLHostFunc` of `Options` struct
 type SSLHostFunc func(host string) (newHost string)
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,8 +66,10 @@ type Options struct {
 	// If ContentTypeNosniff is true, adds the X-Content-Type-Options header with the value `nosniff`. Default is false.
 	ContentTypeNosniff bool
 	// If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
+	// nolint: golint
 	BrowserXssFilter bool
 	// CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
+	// nolint: golint
 	CustomBrowserXssValue string
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
 	// Passing a template string will replace `$NONCE` with a dynamic nonce value of 16 bytes for each request which can be later retrieved using the Nonce function.
