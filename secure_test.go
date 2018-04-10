@@ -236,7 +236,7 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 	sslHostFunc := (func() SSLHostFunc {
 		isServerDown := false
 		return func(host string) (newHost string) {
-			if isServerDown == true {
+			if isServerDown {
 				newHost = "404.example.com"
 				return
 			}
