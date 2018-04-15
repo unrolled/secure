@@ -252,7 +252,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	// SSL check.
-	if (s.opt.SSLRedirect && !ssl && !s.opt.IsDevelopment) || (host != SSLHost) {
+	if (s.opt.SSLRedirect && (!ssl || host != SSLHost) && !s.opt.IsDevelopment) {
 		url := r.URL
 		url.Scheme = "https"
 		url.Host = SSLHost
