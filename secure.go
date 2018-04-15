@@ -242,20 +242,20 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 	// Determine if we are on HTTPS.
 	ssl := s.isSSL(r)
+	var SSLHost string;
+	if s.opt.SSLHostFunc != nil {
+		if h := (*s.opt.SSLHostFunc)(host); len(h) > 0 {
+			SSLHost = h
+		}
+	} else if len(s.opt.SSLHost) > 0 {
+		SSLHost = s.opt.SSLHost
+	}
 
 	// SSL check.
-	if s.opt.SSLRedirect && !ssl && !s.opt.IsDevelopment {
+	if (s.opt.SSLRedirect && !ssl && !s.opt.IsDevelopment) || (host != SSLHost) {
 		url := r.URL
 		url.Scheme = "https"
-		url.Host = host
-
-		if s.opt.SSLHostFunc != nil {
-			if h := (*s.opt.SSLHostFunc)(host); len(h) > 0 {
-				url.Host = h
-			}
-		} else if len(s.opt.SSLHost) > 0 {
-			url.Host = s.opt.SSLHost
-		}
+		url.Host = SSLHost
 
 		status := http.StatusMovedPermanently
 		if s.opt.SSLTemporaryRedirect {
