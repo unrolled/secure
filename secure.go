@@ -242,7 +242,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 	// Determine if we are on HTTPS.
 	ssl := s.isSSL(r)
-	var SSLHost string;
+	var SSLHost = host;
 	if s.opt.SSLHostFunc != nil {
 		if h := (*s.opt.SSLHostFunc)(host); len(h) > 0 {
 			SSLHost = h
