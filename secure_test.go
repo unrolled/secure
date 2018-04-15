@@ -374,7 +374,7 @@ func TestCustomProxyAndHostSSL(t *testing.T) {
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
-	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Code, http.StatusMovedPermanently)
 }
 
 func TestCustomBadProxyAndHostSSL(t *testing.T) {
