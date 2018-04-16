@@ -51,6 +51,8 @@ type Options struct {
 	nonceEnabled bool
 	// If SSLRedirect is set to true, then only allow https requests. Default is false.
 	SSLRedirect bool
+	// If SSLForceHost is true and SSLHost is set, requests will be forced to use SSLHost even the ones that are already using SSL. Default is false.
+	SSLForceHost bool
 	// If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
 	SSLTemporaryRedirect bool
 	// If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
@@ -264,6 +266,30 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 		http.Redirect(w, r, url.String(), status)
 		return nil, fmt.Errorf("redirecting to HTTPS")
+	}
+
+	if s.opt.SSLForceHost {
+		var SSLHost = host;
+		if s.opt.SSLHostFunc != nil {
+			if h := (*s.opt.SSLHostFunc)(host); len(h) > 0 {
+				SSLHost = h
+			}
+		} else if len(s.opt.SSLHost) > 0 {
+			SSLHost = s.opt.SSLHost
+		}
+		if SSLHost != host {
+			url := r.URL
+			url.Scheme = "https"
+			url.Host = SSLHost
+
+			status := http.StatusMovedPermanently
+			if s.opt.SSLTemporaryRedirect {
+				status = http.StatusTemporaryRedirect
+			}
+
+			http.Redirect(w, r, url.String(), status)
+			return nil, fmt.Errorf("redirecting to HTTPS")
+		}
 	}
 
 	// Create our header container.

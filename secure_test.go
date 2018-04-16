@@ -1046,6 +1046,79 @@ func TestIsSSL(t *testing.T) {
 	expect(t, s.isSSL(req), true)
 }
 
+func TestSSLForceHostWithHTTPS(t *testing.T) {
+	s := New(Options{
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+		SSLHost:         "secure.example.com",
+		SSLForceHost:    true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "https"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+}
+
+func TestSSLForceHostWithHTTP(t *testing.T) {
+	s := New(Options{
+		SSLHost:         "secure.example.com",
+		SSLForceHost:    true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "http")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+}
+
+func TestSSLForceHostWithSSLRedirect(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:     true,
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+		SSLHost:         "secure.example.com",
+		SSLForceHost:    true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "https"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+}
+
+func TestSSLForceHostTemporaryRedirect(t *testing.T) {
+	s := New(Options{
+		SSLProxyHeaders:      map[string]string{"X-Forwarded-Proto": "https"},
+		SSLHost:              "secure.example.com",
+		SSLForceHost:         true,
+		SSLTemporaryRedirect: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "https"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusTemporaryRedirect)
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
