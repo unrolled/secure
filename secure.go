@@ -51,7 +51,7 @@ type Options struct {
 	nonceEnabled bool
 	// If SSLRedirect is set to true, then only allow https requests. Default is false.
 	SSLRedirect bool
-	// If SSLForceHost is true and SSLHost is set, requests will be forced to use SSLHost even the ones that are already using SSL
+	// If SSLForceHost is true and SSLHost is set, requests will be forced to use SSLHost even the ones that are already using SSL. Default is false.
 	SSLForceHost bool
 	// If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
 	SSLTemporaryRedirect bool
