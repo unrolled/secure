@@ -51,6 +51,8 @@ type Options struct {
 	nonceEnabled bool
 	// If SSLRedirect is set to true, then only allow https requests. Default is false.
 	SSLRedirect bool
+	// If SSLForceHost is true and SSLHost is set, requests will be forced to use SSLHost even the ones that are already using SSL
+	SSLForceHost bool
 	// If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
 	SSLTemporaryRedirect bool
 	// If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
@@ -82,8 +84,6 @@ type Options struct {
 	SSLProxyHeaders map[string]string
 	// STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
 	STSSeconds int64
-	// If SSLForceHost is true and SSLHost is set, requests will be forced to use SSLHost even the ones that are already using SSL
-	SSLForceHost bool
 }
 
 // Secure is a middleware that helps setup a few basic security features. A single secure.Options struct can be
