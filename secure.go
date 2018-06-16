@@ -269,7 +269,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	if s.opt.SSLForceHost {
-		var SSLHost = host;
+		var SSLHost = host
 		if s.opt.SSLHostFunc != nil {
 			if h := (*s.opt.SSLHostFunc)(host); len(h) > 0 {
 				SSLHost = h

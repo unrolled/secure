@@ -1066,8 +1066,8 @@ func TestSSLForceHostWithHTTPS(t *testing.T) {
 
 func TestSSLForceHostWithHTTP(t *testing.T) {
 	s := New(Options{
-		SSLHost:         "secure.example.com",
-		SSLForceHost:    true,
+		SSLHost:      "secure.example.com",
+		SSLForceHost: true,
 	})
 
 	res := httptest.NewRecorder()
