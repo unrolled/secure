@@ -1023,6 +1023,20 @@ func TestReferrerForRequestOnly(t *testing.T) {
 	expect(t, res.Header().Get("Referrer-Policy"), "")
 }
 
+func TestFeaturePolicy(t *testing.T) {
+	s := New(Options{
+		FeaturePolicy: "vibrate 'none';",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Feature-Policy"), "vibrate 'none';")
+}
+
 func TestIsSSL(t *testing.T) {
 	s := New(Options{
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
