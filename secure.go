@@ -208,7 +208,7 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	if responseHeader != nil {
 		for key, values := range responseHeader {
 			for _, value := range values {
-				w.Header().Add(key, value)
+				w.Header().Set(key, value)
 			}
 		}
 	}
