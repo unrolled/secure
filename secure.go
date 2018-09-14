@@ -22,6 +22,7 @@ const (
 	cspHeader            = "Content-Security-Policy"
 	hpkpHeader           = "Public-Key-Pins"
 	referrerPolicyHeader = "Referrer-Policy"
+	featurePolicyHeader  = "Feature-Policy"
 
 	ctxSecureHeaderKey = secureCtxKey("SecureResponseHeader")
 	cspNonceSize       = 16
@@ -71,6 +72,8 @@ type Options struct {
 	PublicKey string
 	// ReferrerPolicy allows sites to control when browsers will pass the Referer header to other sites. Default is "".
 	ReferrerPolicy string
+	// FeaturePolicy allows to selectively enable and disable use of various browser features and APIs. Default is "".
+	FeaturePolicy string
 	// SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
 	SSLHost string
 	// AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
@@ -346,6 +349,11 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// Referrer Policy header.
 	if len(s.opt.ReferrerPolicy) > 0 {
 		responseHeader.Set(referrerPolicyHeader, s.opt.ReferrerPolicy)
+	}
+
+	// Feature Policy header.
+	if len(s.opt.FeaturePolicy) > 0 {
+		responseHeader.Set(featurePolicyHeader, s.opt.FeaturePolicy)
 	}
 
 	return responseHeader, nil
