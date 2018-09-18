@@ -1037,6 +1037,21 @@ func TestFeaturePolicy(t *testing.T) {
 	expect(t, res.Header().Get("Feature-Policy"), "vibrate 'none';")
 }
 
+func TestExpectCT(t *testing.T) {
+	s := New(Options{
+		ExpectCTHeader: `enforce, max-age=30, report-uri="https://www.example.com/ct-report"`,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Expect-CT"), `enforce, max-age=30, report-uri="https://www.example.com/ct-report"`)
+}
+
 func TestIsSSL(t *testing.T) {
 	s := New(Options{
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},

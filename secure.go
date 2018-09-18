@@ -23,6 +23,7 @@ const (
 	hpkpHeader           = "Public-Key-Pins"
 	referrerPolicyHeader = "Referrer-Policy"
 	featurePolicyHeader  = "Feature-Policy"
+	expectCTHeader       = "Expect-CT"
 
 	ctxSecureHeaderKey = secureCtxKey("SecureResponseHeader")
 	cspNonceSize       = 16
@@ -87,6 +88,8 @@ type Options struct {
 	SSLProxyHeaders map[string]string
 	// STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
 	STSSeconds int64
+	// ExpectCTHeader allows the Expect-CT header value to be set with a custom value. Default is "".
+	ExpectCTHeader string
 }
 
 // Secure is a middleware that helps setup a few basic security features. A single secure.Options struct can be
@@ -354,6 +357,11 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// Feature Policy header.
 	if len(s.opt.FeaturePolicy) > 0 {
 		responseHeader.Set(featurePolicyHeader, s.opt.FeaturePolicy)
+	}
+
+	// Expect-CT header.
+	if len(s.opt.ExpectCTHeader) > 0 {
+		responseHeader.Set(expectCTHeader, s.opt.ExpectCTHeader)
 	}
 
 	return responseHeader, nil
