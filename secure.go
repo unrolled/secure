@@ -20,6 +20,7 @@ const (
 	xssProtectionHeader  = "X-XSS-Protection"
 	xssProtectionValue   = "1; mode=block"
 	cspHeader            = "Content-Security-Policy"
+	cspReportOnlyHeader  = "Content-Security-Policy-Report-Only"
 	hpkpHeader           = "Public-Key-Pins"
 	referrerPolicyHeader = "Referrer-Policy"
 	featurePolicyHeader  = "Feature-Policy"
@@ -63,6 +64,8 @@ type Options struct {
 	STSPreload bool
 	// ContentSecurityPolicy allows the Content-Security-Policy header value to be set with a custom value. Default is "".
 	ContentSecurityPolicy string
+	// ContentSecurityPolicyReportOnly allows the Content-Security-Policy-Report-Only header value to be set with a custom value. Default is "".
+	ContentSecurityPolicyReportOnly string
 	// CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
 	CustomBrowserXssValue string // nolint: golint
 	// Passing a template string will replace `$NONCE` with a dynamic nonce value of 16 bytes for each request which can be later retrieved using the Nonce function.
@@ -346,6 +349,15 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 			responseHeader.Set(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, CSPNonce(r.Context())))
 		} else {
 			responseHeader.Set(cspHeader, s.opt.ContentSecurityPolicy)
+		}
+	}
+
+	// Content Security Policy Report Only header.
+	if len(s.opt.ContentSecurityPolicyReportOnly) > 0 {
+		if s.opt.nonceEnabled {
+			responseHeader.Set(cspReportOnlyHeader, fmt.Sprintf(s.opt.ContentSecurityPolicyReportOnly, CSPNonce(r.Context())))
+		} else {
+			responseHeader.Set(cspReportOnlyHeader, s.opt.ContentSecurityPolicyReportOnly)
 		}
 	}
 
