@@ -842,6 +842,34 @@ func TestCspForRequestOnly(t *testing.T) {
 	expect(t, res.Header().Get("Content-Security-Policy"), "")
 }
 
+func TestCspReportOnly(t *testing.T) {
+	s := New(Options{
+		ContentSecurityPolicyReportOnly: "default-src 'self'",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Content-Security-Policy-Report-Only"), "default-src 'self'")
+}
+
+func TestCspReportOnlyForRequestOnly(t *testing.T) {
+	s := New(Options{
+		ContentSecurityPolicyReportOnly: "default-src 'self'",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Content-Security-Policy-Report-Only"), "")
+}
+
 func TestInlineSecure(t *testing.T) {
 	s := New(Options{
 		FrameDeny: true,
