@@ -352,7 +352,7 @@ func main() {
     r := mux.NewRouter()
     r.Use(secureMiddleware.Handler)
     http.Handle("/", r)
-    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+    log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", 8080), nil))
 }
 ~~~
 
