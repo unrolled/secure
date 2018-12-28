@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const cspNonceKey = "unrolled/secure"
+const cspNonceKey = "unrolled/secure/nonce"
 
 // CSPNonce returns the nonce value associated with the present request. If no nonce has been generated it returns an empty string.
 func CSPNonce(c context.Context) string {
