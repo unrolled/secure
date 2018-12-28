@@ -134,7 +134,8 @@ func (s *Secure) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Let secure process the request. If it returns an error,
 		// that indicates the request should not continue.
-		err := s.Process(w, r)
+		responseHeader, r, err := s.processRequest(w, r)
+		addResponseHeaders(responseHeader, w)
 
 		// If there was an error, do not continue.
 		if err != nil {
@@ -151,7 +152,7 @@ func (s *Secure) HandlerForRequestOnly(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Let secure process the request. If it returns an error,
 		// that indicates the request should not continue.
-		responseHeader, err := s.processRequest(w, r)
+		responseHeader, r, err := s.processRequest(w, r)
 
 		// If there was an error, do not continue.
 		if err != nil {
@@ -170,7 +171,8 @@ func (s *Secure) HandlerForRequestOnly(h http.Handler) http.Handler {
 func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// Let secure process the request. If it returns an error,
 	// that indicates the request should not continue.
-	err := s.Process(w, r)
+	responseHeader, r, err := s.processRequest(w, r)
+	addResponseHeaders(responseHeader, w)
 
 	// If there was an error, do not call next.
 	if err == nil && next != nil {
@@ -183,7 +185,7 @@ func (s *Secure) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, nex
 func (s *Secure) HandlerFuncWithNextForRequestOnly(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// Let secure process the request. If it returns an error,
 	// that indicates the request should not continue.
-	responseHeader, err := s.processRequest(w, r)
+	responseHeader, r, err := s.processRequest(w, r)
 
 	// If there was an error, do not call next.
 	if err == nil && next != nil {
@@ -195,9 +197,7 @@ func (s *Secure) HandlerFuncWithNextForRequestOnly(w http.ResponseWriter, r *htt
 	}
 }
 
-// Process runs the actual checks and writes the headers in the ResponseWriter.
-func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
-	responseHeader, err := s.processRequest(w, r)
+func addResponseHeaders(responseHeader http.Header, w http.ResponseWriter) {
 	if responseHeader != nil {
 		for key, values := range responseHeader {
 			for _, value := range values {
@@ -205,12 +205,19 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 			}
 		}
 	}
+}
+
+// Process runs the actual checks and writes the headers in the ResponseWriter.
+func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
+	responseHeader, r, err := s.processRequest(w, r)
+	addResponseHeaders(responseHeader, w)
+
 	return err
 }
 
 // processRequest runs the actual checks on the request and returns an error if the middleware chain should stop.
-func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.Header, error) {
-	// Setup nouce if required.
+func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.Header, *http.Request, error) {
+	// Setup nonce if required.
 	if s.opt.nonceEnabled {
 		r = withCSPNonce(r, cspRandNonce())
 	}
@@ -236,7 +243,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 		if !isGoodHost {
 			s.badHostHandler.ServeHTTP(w, r)
-			return nil, fmt.Errorf("bad host name: %s", host)
+			return nil, nil, fmt.Errorf("bad host name: %s", host)
 		}
 	}
 
@@ -263,7 +270,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 		}
 
 		http.Redirect(w, r, url.String(), status)
-		return nil, fmt.Errorf("redirecting to HTTPS")
+		return nil, nil, fmt.Errorf("redirecting to HTTPS")
 	}
 
 	if s.opt.SSLForceHost {
@@ -286,7 +293,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 			}
 
 			http.Redirect(w, r, url.String(), status)
-			return nil, fmt.Errorf("redirecting to HTTPS")
+			return nil, nil, fmt.Errorf("redirecting to HTTPS")
 		}
 	}
 
@@ -365,7 +372,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 		responseHeader.Set(expectCTHeader, s.opt.ExpectCTHeader)
 	}
 
-	return responseHeader, nil
+	return responseHeader, r, nil
 }
 
 // isSSL determine if we are on HTTPS.

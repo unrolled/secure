@@ -9,6 +9,10 @@ import (
 	"testing"
 )
 
+var cspHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(CSPNonce(r.Context())))
+})
+
 func TestCSPNonce(t *testing.T) {
 	s := New(Options{
 		ContentSecurityPolicy: "default-src 'self' $NONCE; script-src 'strict-dynamic' $NONCE",
@@ -17,7 +21,7 @@ func TestCSPNonce(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
 
-	s.Handler(myHandler).ServeHTTP(res, req)
+	s.Handler(cspHandler).ServeHTTP(res, req)
 
 	expect(t, res.Code, http.StatusOK)
 
@@ -25,6 +29,9 @@ func TestCSPNonce(t *testing.T) {
 	expect(t, strings.Count(csp, "'nonce-"), 2)
 
 	nonce := strings.Split(strings.Split(csp, "'")[3], "-")[1]
+	// Test that the context has the CSP nonce, but only during the request.
+	expect(t, res.Body.String(), nonce)
+	expect(t, "", CSPNonce(req.Context()))
 
 	_, err := base64.RawStdEncoding.DecodeString(nonce)
 	expect(t, err, nil)
