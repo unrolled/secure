@@ -32,7 +32,7 @@ func TestCSPNonce(t *testing.T) {
 	nonce := strings.Split(strings.Split(csp, "'")[3], "-")[1]
 	// Test that the context has the CSP nonce, but only during the request.
 	expect(t, res.Body.String(), nonce)
-	expect(t, "", CSPNonce(req.Context()))
+	expect(t, CSPNonce(req.Context()), "")
 
 	_, err := base64.RawStdEncoding.DecodeString(nonce)
 	expect(t, err, nil)
