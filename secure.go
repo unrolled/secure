@@ -210,7 +210,7 @@ func addResponseHeaders(responseHeader http.Header, w http.ResponseWriter) {
 
 // Process runs the actual checks and writes the headers in the ResponseWriter.
 func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
-	responseHeader, r, err := s.processRequest(w, r)
+	responseHeader, _, err := s.processRequest(w, r)
 	addResponseHeaders(responseHeader, w)
 
 	return err
