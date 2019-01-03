@@ -216,6 +216,11 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	return err
 }
 
+// ProcessNoModifyRequest runs the actual checks but does not write the headers in the ResponseWriter.
+func (s *Secure) ProcessNoModifyRequest(w http.ResponseWriter, r *http.Request) (http.Header, *http.Request, error) {
+	return s.processRequest(w, r)
+}
+
 // processRequest runs the actual checks on the request and returns an error if the middleware chain should stop.
 func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.Header, *http.Request, error) {
 	// Setup nonce if required.
