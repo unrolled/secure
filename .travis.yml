@@ -11,6 +11,7 @@ go:
 before_install:
   - go get -u github.com/codegangsta/negroni
   - go get -u github.com/alecthomas/gometalinter
+  - go get -u github.com/google/uuid
 
 install:
   - gometalinter --install

@@ -83,6 +83,8 @@ s := secure.New(secure.Options{
     ReferrerPolicy: "same-origin", // ReferrerPolicy allows the Referrer-Policy header with the value to be set with a custom value. Default is "".
     FeaturePolicy: "vibrate 'none';", // FeaturePolicy allows the Feature-Policy header with the value to be set with a custom value. Default is "".
     ExpectCTHeader: `enforce, max-age=30, report-uri="https://www.example.com/ct-report"`,
+    CorrelationID: true, // If CorrelationID is true, adds a correlation id header containing a random UUID. Default is false.
+    CorrelationIDHeaderName: "X-Correlation-ID" // The name of the correlation id header to be added. Default is `X-Correlation-ID`.
 
     IsDevelopment: true, // This will cause the AllowedHosts, SSLRedirect, and STSSeconds/STSIncludeSubdomains options to be ignored during development. When deploying to production, be sure to set this to false.
 })
@@ -117,6 +119,8 @@ l := secure.New(secure.Options{
     ReferrerPolicy: "",
     FeaturePolicy: "",
     ExpectCTHeader: "",
+    CorrelationID: false,
+    CorrelationIDHeaderName: "X-Correlation-ID",
     IsDevelopment: false,
 })
 ~~~

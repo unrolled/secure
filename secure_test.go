@@ -2,6 +2,7 @@ package secure
 
 import (
 	"crypto/tls"
+	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -1174,6 +1175,49 @@ func TestSSLForceHostTemporaryRedirect(t *testing.T) {
 	s.Handler(myHandler).ServeHTTP(res, req)
 
 	expect(t, res.Code, http.StatusTemporaryRedirect)
+}
+
+func TestCorrelationIDHeader(t *testing.T) {
+	s := New(Options{
+		CorrelationID: true,
+	})
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+	if res.Header().Get(correlationIDHeader) == "" {
+		t.Errorf("Expected [%v] (type %v) - Got [%v] (type %v)", res.Header().Get(correlationIDHeader), reflect.TypeOf(res.Header().Get(correlationIDHeader)), "", reflect.TypeOf(""))
+	}
+}
+
+func TestCorrelationIDHeaderName(t *testing.T) {
+	s := New(Options{
+		CorrelationID:           true,
+		CorrelationIDHeaderName: "X-Request-ID",
+	})
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+	if res.Header().Get(s.opt.CorrelationIDHeaderName) == "" {
+		t.Errorf("Expected [%v] (type %v) - Got [%v] (type %v)", res.Header().Get(s.opt.CorrelationIDHeaderName), reflect.TypeOf(res.Header().Get(s.opt.CorrelationIDHeaderName)), "", reflect.TypeOf(""))
+	}
+}
+
+func TestCorrelationIDHeaderForward(t *testing.T) {
+	s := New(Options{
+		CorrelationID: true,
+	})
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.Header.Set(correlationIDHeader, uuid.New().String())
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Header().Get(correlationIDHeader), req.Header.Get(correlationIDHeader))
 }
 
 /* Test Helpers */
