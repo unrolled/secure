@@ -25,7 +25,7 @@ func main() {
         SSLRedirect:           true,
         SSLHost:               "ssl.example.com",
         SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
-        STSSeconds:            315360000,
+        STSSeconds:            31536000,
         STSIncludeSubdomains:  true,
         STSPreload:            true,
         FrameDeny:             true,
@@ -45,7 +45,7 @@ Be sure to include the Secure middleware as close to the top (beginning) as poss
 The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
 Once those requirements are satisfied, it will add the following headers:
 ~~~ go
-Strict-Transport-Security: 315360000; includeSubdomains; preload
+Strict-Transport-Security: 31536000; includeSubdomains; preload
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 X-XSS-Protection: 1; mode=block
@@ -69,7 +69,7 @@ s := secure.New(secure.Options{
     SSLHost: "ssl.example.com", // SSLHost is the host name that is used to redirect HTTP requests to HTTPS. Default is "", which indicates to use the same host.
     SSLHostFunc: nil, // SSLHostFunc is a function pointer, the return value of the function is the host name that has same functionality as `SSHost`. Default is nil. If SSLHostFunc is nil, the `SSLHost` option will be used.
     SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"}, // SSLProxyHeaders is set of header keys with associated values that would indicate a valid HTTPS request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
-    STSSeconds: 315360000, // STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
+    STSSeconds: 31536000, // STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
     STSIncludeSubdomains: true, // If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
     STSPreload: true, // If STSPreload is set to true, the `preload` flag will be appended to the Strict-Transport-Security header. Default is false.
     ForceSTSHeader: false, // STS header is only included when the connection is HTTPS. If you want to force it to always be added, set to true. `IsDevelopment` still overrides this. Default is false.
