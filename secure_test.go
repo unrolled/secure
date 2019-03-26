@@ -68,6 +68,67 @@ func TestBadSingleAllowHosts(t *testing.T) {
 	expect(t, res.Code, http.StatusInternalServerError)
 }
 
+func TestRegexSingleAllowHosts(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:        []string{"*\\.example\\.com"},
+		AllowedHostsIsRegex: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "sub.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
+func TestRegexMultipleAllowHosts(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:        []string{".+\\.example\\.com", ".*sub\\..+-awesome-example\\.com"},
+		AllowedHostsIsRegex: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "sub.first-awesome-example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/foo", nil)
+	req.Host = "test.sub.second-awesome-example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/foo", nil)
+	req.Host = "test.sub.second-example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusInternalServerError)
+}
+
+func TestInvalidRegexAllowHosts(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	New(Options{
+		AllowedHosts:        []string{"[*.e"},
+		AllowedHostsIsRegex: true,
+	})
+}
+
 func TestGoodSingleAllowHostsProxyHeaders(t *testing.T) {
 	s := New(Options{
 		AllowedHosts:      []string{"www.example.com"},

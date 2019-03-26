@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -82,6 +83,9 @@ type Options struct {
 	SSLHost string
 	// AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
 	AllowedHosts []string
+	// AllowedHostsAreRegex determines, if the provided slice contains valid regular expressions. If this flag is set to true, every request's
+	// host will be checked against these expressions. Default is false for backwards compatibility.
+	AllowedHostsAreRegex bool
 	// HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
 	HostsProxyHeaders []string
 	// SSLHostFunc is a function pointer, the return value of the function is the host name that has same functionality as `SSHost`. Default is nil.
@@ -103,6 +107,10 @@ type Secure struct {
 
 	// badHostHandler is the handler used when an incorrect host is passed in.
 	badHostHandler http.Handler
+
+	// cRegexAllowedHosts saves the compiled regular expressions of the AllowedHosts
+	// option for subsequent use in processRequest
+	cRegexAllowedHosts []*regexp.Regexp
 }
 
 // New constructs a new Secure instance with the supplied options.
@@ -118,10 +126,23 @@ func New(options ...Options) *Secure {
 
 	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s")
 
-	return &Secure{
+	s := &Secure{
 		opt:            o,
 		badHostHandler: http.HandlerFunc(defaultBadHostHandler),
 	}
+
+	if s.opt.AllowedHostsAreRegex {
+		// Test for invalid regular expressions in AllowedHosts
+		for _, allowedHost := range o.AllowedHosts {
+			regex, err := regexp.Compile(fmt.Sprintf("^%s$", allowedHost))
+			if err != nil {
+				panic(fmt.Sprintf("Error parsing AllowedHost: %s", err))
+			}
+			s.cRegexAllowedHosts = append(s.cRegexAllowedHosts, regex)
+		}
+	}
+
+	return s
 }
 
 // SetBadHostHandler sets the handler to call when secure rejects the host name.
@@ -240,10 +261,19 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// Allowed hosts check.
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
-		for _, allowedHost := range s.opt.AllowedHosts {
-			if strings.EqualFold(allowedHost, host) {
-				isGoodHost = true
-				break
+		if s.opt.AllowedHostsAreRegex {
+			for _, allowedHost := range s.cRegexAllowedHosts {
+				if match := allowedHost.MatchString(host); match {
+					isGoodHost = true
+					break
+				}
+			}
+		} else {
+			for _, allowedHost := range s.opt.AllowedHosts {
+				if strings.EqualFold(allowedHost, host) {
+					isGoodHost = true
+					break
+				}
 			}
 		}
 
