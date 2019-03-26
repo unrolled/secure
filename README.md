@@ -101,6 +101,7 @@ s := secure.New()
 
 l := secure.New(secure.Options{
     AllowedHosts: []string,
+    AllowedHostsAreRegex: false,
     HostsProxyHeaders: []string,
     SSLRedirect: false,
     SSLTemporaryRedirect: false,
