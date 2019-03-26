@@ -70,8 +70,8 @@ func TestBadSingleAllowHosts(t *testing.T) {
 
 func TestRegexSingleAllowHosts(t *testing.T) {
 	s := New(Options{
-		AllowedHosts:        []string{"*\\.example\\.com"},
-		AllowedHostsIsRegex: true,
+		AllowedHosts:         []string{"*\\.example\\.com"},
+		AllowedHostsAreRegex: true,
 	})
 
 	res := httptest.NewRecorder()
@@ -86,8 +86,8 @@ func TestRegexSingleAllowHosts(t *testing.T) {
 
 func TestRegexMultipleAllowHosts(t *testing.T) {
 	s := New(Options{
-		AllowedHosts:        []string{".+\\.example\\.com", ".*sub\\..+-awesome-example\\.com"},
-		AllowedHostsIsRegex: true,
+		AllowedHosts:         []string{".+\\.example\\.com", ".*sub\\..+-awesome-example\\.com"},
+		AllowedHostsAreRegex: true,
 	})
 
 	res := httptest.NewRecorder()
@@ -124,8 +124,8 @@ func TestInvalidRegexAllowHosts(t *testing.T) {
 		}
 	}()
 	New(Options{
-		AllowedHosts:        []string{"[*.e"},
-		AllowedHostsIsRegex: true,
+		AllowedHosts:         []string{"[*.e"},
+		AllowedHostsAreRegex: true,
 	})
 }
 
