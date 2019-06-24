@@ -123,8 +123,9 @@ func New(options ...Options) *Secure {
 	}
 
 	o.ContentSecurityPolicy = strings.Replace(o.ContentSecurityPolicy, "$NONCE", "'nonce-%[1]s'", -1)
+	o.ContentSecurityPolicyReportOnly = strings.Replace(o.ContentSecurityPolicyReportOnly, "$NONCE", "'nonce-%[1]s'", -1)
 
-	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s")
+	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s") || strings.Contains(o.ContentSecurityPolicyReportOnly, "%[1]s")
 
 	s := &Secure{
 		opt:            o,

@@ -15,29 +15,42 @@ var cspHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 })
 
 func TestCSPNonce(t *testing.T) {
-	s := New(Options{
-		ContentSecurityPolicy: "default-src 'self' $NONCE; script-src 'strict-dynamic' $NONCE",
-	})
+	csp := "default-src 'self' $NONCE; script-src 'strict-dynamic' $NONCE"
+	cases := []struct {
+		options Options
+		headers []string
+	}{
+		{Options{ContentSecurityPolicy: csp}, []string{"Content-Security-Policy"}},
+		{Options{ContentSecurityPolicyReportOnly: csp}, []string{"Content-Security-Policy-Report-Only"}},
+		{Options{ContentSecurityPolicy: csp, ContentSecurityPolicyReportOnly: csp},
+			[]string{"Content-Security-Policy", "Content-Security-Policy-Report-Only"}},
+	}
 
-	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/foo", nil)
+	for _, c := range cases {
+		s := New(c.options)
 
-	s.Handler(cspHandler).ServeHTTP(res, req)
+		res := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/foo", nil)
 
-	expect(t, res.Code, http.StatusOK)
+		s.Handler(cspHandler).ServeHTTP(res, req)
 
-	csp := res.Header().Get("Content-Security-Policy")
-	expect(t, strings.Count(csp, "'nonce-"), 2)
+		expect(t, res.Code, http.StatusOK)
 
-	nonce := strings.Split(strings.Split(csp, "'")[3], "-")[1]
-	// Test that the context has the CSP nonce, but only during the request.
-	expect(t, res.Body.String(), nonce)
-	expect(t, CSPNonce(req.Context()), "")
+		for _, header := range c.headers {
+			csp := res.Header().Get(header)
+			expect(t, strings.Count(csp, "'nonce-"), 2)
 
-	_, err := base64.RawStdEncoding.DecodeString(nonce)
-	expect(t, err, nil)
+			nonce := strings.Split(strings.Split(csp, "'")[3], "-")[1]
+			// Test that the context has the CSP nonce, but only during the request.
+			expect(t, res.Body.String(), nonce)
+			expect(t, CSPNonce(req.Context()), "")
 
-	expect(t, csp, fmt.Sprintf("default-src 'self' 'nonce-%[1]s'; script-src 'strict-dynamic' 'nonce-%[1]s'", nonce))
+			_, err := base64.RawStdEncoding.DecodeString(nonce)
+			expect(t, err, nil)
+
+			expect(t, csp, fmt.Sprintf("default-src 'self' 'nonce-%[1]s'; script-src 'strict-dynamic' 'nonce-%[1]s'", nonce))
+		}
+	}
 }
 
 func TestWithCSPNonce(t *testing.T) {
