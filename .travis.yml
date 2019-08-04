@@ -5,10 +5,16 @@ go:
   - 1.12.x
   - tip
 
+env:
+  - GO111MODULE=on
+
 before_install:
-  - go get -u github.com/codegangsta/negroni
-  - go get -u honnef.co/go/tools/cmd/staticcheck
+  - GO111MODULE=off go get -u honnef.co/go/tools/cmd/staticcheck
+
+install:
+  - go mod download
 
 script:
   - staticcheck
   - go test -v -race -tags=integration
+
