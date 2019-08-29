@@ -430,6 +430,12 @@ func (s *Secure) isSSL(r *http.Request) bool {
 // Used by http.ReverseProxy.
 func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
 	if res != nil && res.Request != nil {
+		// fix Location response header http to https when SSL.
+		location := res.Header.Get("Location")
+		if s.isSSL(res.Request) && location != "" && strings.Contains(location, "http:") {
+			location = strings.Replace(location, "http:", "https:", 1)
+			res.Header.Set("Location", location)
+		}
 		responseHeader := res.Request.Context().Value(ctxSecureHeaderKey)
 		if responseHeader != nil {
 			for header, values := range responseHeader.(http.Header) {
