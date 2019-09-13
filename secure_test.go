@@ -1237,6 +1237,43 @@ func TestSSLForceHostTemporaryRedirect(t *testing.T) {
 	expect(t, res.Code, http.StatusTemporaryRedirect)
 }
 
+func TestModifyResponseHeadersNoSSL(t *testing.T) {
+	s := New(Options{
+		SSLRedirect: false,
+	})
+
+	res := &http.Response{}
+	res.Header = http.Header{"Location": []string{"http://example.com"}}
+
+	err := s.ModifyResponseHeaders(res)
+	expect(t, err, nil)
+
+	expect(t, res.Header.Get("Location"), "http://example.com")
+}
+
+func TestModifyResponseHeadersWithSSL(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:     true,
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+	})
+
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	res := &http.Response{}
+	res.Header = http.Header{"Location": []string{"http://example.com"}}
+	res.Request = req
+
+	expect(t, res.Header.Get("Location"), "http://example.com")
+
+	err := s.ModifyResponseHeaders(res)
+	expect(t, err, nil)
+
+	expect(t, res.Header.Get("Location"), "https://example.com")
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
