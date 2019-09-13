@@ -238,6 +238,15 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 	return err
 }
 
+// ProcessAndReturnNonce runs the actual checks and writes the headers in the ResponseWriter.
+// In addition, the generated nonce for the request is returned as well as the error value.
+func (s *Secure) ProcessAndReturnNonce(w http.ResponseWriter, r *http.Request) (string, error) {
+	responseHeader, newR, err := s.processRequest(w, r)
+	addResponseHeaders(responseHeader, w)
+
+	return CSPNonce(newR.Context()), err
+}
+
 // ProcessNoModifyRequest runs the actual checks but does not write the headers in the ResponseWriter.
 func (s *Secure) ProcessNoModifyRequest(w http.ResponseWriter, r *http.Request) (http.Header, *http.Request, error) {
 	return s.processRequest(w, r)
