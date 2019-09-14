@@ -221,11 +221,9 @@ func (s *Secure) HandlerFuncWithNextForRequestOnly(w http.ResponseWriter, r *htt
 
 // addResponseHeaders Adds the headers from 'responseHeader' to the response.
 func addResponseHeaders(responseHeader http.Header, w http.ResponseWriter) {
-	if responseHeader != nil {
-		for key, values := range responseHeader {
-			for _, value := range values {
-				w.Header().Set(key, value)
-			}
+	for key, values := range responseHeader {
+		for _, value := range values {
+			w.Header().Set(key, value)
 		}
 	}
 }
