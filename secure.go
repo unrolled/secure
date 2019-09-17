@@ -12,7 +12,7 @@ type secureCtxKey string
 
 const (
 	stsHeader            = "Strict-Transport-Security"
-	stsSubdomainString   = "; includeSubdomains"
+	stsSubdomainString   = "; includeSubDomains"
 	stsPreloadString     = "; preload"
 	frameOptionsHeader   = "X-Frame-Options"
 	frameOptionsValue    = "DENY"
