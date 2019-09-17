@@ -600,7 +600,7 @@ func TestStsHeaderWithSubdomains(t *testing.T) {
 	s.Handler(myHandler).ServeHTTP(res, req)
 
 	expect(t, res.Code, http.StatusOK)
-	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; includeSubdomains")
+	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; includeSubDomains")
 }
 
 func TestStsHeaderWithSubdomainsForRequestOnly(t *testing.T) {
@@ -665,7 +665,7 @@ func TestStsHeaderWithSubdomainsWithPreload(t *testing.T) {
 	s.Handler(myHandler).ServeHTTP(res, req)
 
 	expect(t, res.Code, http.StatusOK)
-	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; includeSubdomains; preload")
+	expect(t, res.Header().Get("Strict-Transport-Security"), "max-age=315360000; includeSubDomains; preload")
 }
 
 func TestStsHeaderWithSubdomainsWithPreloadForRequestOnly(t *testing.T) {
