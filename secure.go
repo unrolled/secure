@@ -438,10 +438,12 @@ func (s *Secure) isSSL(r *http.Request) bool {
 func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
 	if res != nil && res.Request != nil {
 		// Fix Location response header http to https when SSL is enabled
+		// And SSLHost is defined,
 		// And the response location header includes the SSLHost,
 		// And no port is defined in the location header.
 		location := res.Header.Get("Location")
 		if s.isSSL(res.Request) &&
+			len(s.opt.SSLHost) > 0 &&
 			strings.Contains(location, fmt.Sprintf("http://%s", s.opt.SSLHost)) &&
 			!strings.Contains(location, fmt.Sprintf("http://%s:", s.opt.SSLHost)) {
 			location = strings.Replace(location, "http:", "https:", 1)
