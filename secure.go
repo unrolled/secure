@@ -437,9 +437,13 @@ func (s *Secure) isSSL(r *http.Request) bool {
 // Used by http.ReverseProxy.
 func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
 	if res != nil && res.Request != nil {
-		// Fix Location response header http to https when SSL is enabled.
+		// Fix Location response header http to https when SSL is enabled
+		// And the response location header includes the SSLHost,
+		// And no port is defined in the location header.
 		location := res.Header.Get("Location")
-		if s.isSSL(res.Request) && strings.Contains(location, "http:") {
+		if s.isSSL(res.Request) &&
+			strings.Contains(location, fmt.Sprintf("http://%s", s.opt.SSLHost)) &&
+			!strings.Contains(location, fmt.Sprintf("http://%s:", s.opt.SSLHost)) {
 			location = strings.Replace(location, "http:", "https:", 1)
 			res.Header.Set("Location", location)
 		}
