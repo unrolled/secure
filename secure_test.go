@@ -1251,7 +1251,31 @@ func TestModifyResponseHeadersNoSSL(t *testing.T) {
 	expect(t, res.Header.Get("Location"), "http://example.com")
 }
 
-func TestModifyResponseHeadersWithSSL(t *testing.T) {
+func TestModifyResponseHeadersWithSSLAndDifferentSSLHost(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:     true,
+		SSLHost:         "secure.example.com",
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+	})
+
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	res := &http.Response{}
+	res.Header = http.Header{"Location": []string{"http://example.com"}}
+	res.Request = req
+
+	expect(t, res.Header.Get("Location"), "http://example.com")
+
+	err := s.ModifyResponseHeaders(res)
+	expect(t, err, nil)
+
+	expect(t, res.Header.Get("Location"), "http://example.com")
+}
+
+func TestModifyResponseHeadersWithSSLAndNoSSLHost(t *testing.T) {
 	s := New(Options{
 		SSLRedirect:     true,
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
@@ -1271,7 +1295,79 @@ func TestModifyResponseHeadersWithSSL(t *testing.T) {
 	err := s.ModifyResponseHeaders(res)
 	expect(t, err, nil)
 
-	expect(t, res.Header.Get("Location"), "https://example.com")
+	expect(t, res.Header.Get("Location"), "http://example.com")
+}
+
+func TestModifyResponseHeadersWithSSLAndMatchingSSLHost(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:     true,
+		SSLHost:         "secure.example.com",
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+	})
+
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	res := &http.Response{}
+	res.Header = http.Header{"Location": []string{"http://secure.example.com"}}
+	res.Request = req
+
+	expect(t, res.Header.Get("Location"), "http://secure.example.com")
+
+	err := s.ModifyResponseHeaders(res)
+	expect(t, err, nil)
+
+	expect(t, res.Header.Get("Location"), "https://secure.example.com")
+}
+
+func TestModifyResponseHeadersWithSSLAndPortInLocationResponse(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:     true,
+		SSLHost:         "secure.example.com",
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+	})
+
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	res := &http.Response{}
+	res.Header = http.Header{"Location": []string{"http://secure.example.com:877"}}
+	res.Request = req
+
+	expect(t, res.Header.Get("Location"), "http://secure.example.com:877")
+
+	err := s.ModifyResponseHeaders(res)
+	expect(t, err, nil)
+
+	expect(t, res.Header.Get("Location"), "http://secure.example.com:877")
+}
+
+func TestModifyResponseHeadersWithSSLAndPathInLocationResponse(t *testing.T) {
+	s := New(Options{
+		SSLRedirect:     true,
+		SSLHost:         "secure.example.com",
+		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+	})
+
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+	req.URL.Scheme = "http"
+	req.Header.Add("X-Forwarded-Proto", "https")
+
+	res := &http.Response{}
+	res.Header = http.Header{"Location": []string{"http://secure.example.com/admin/login"}}
+	res.Request = req
+
+	expect(t, res.Header.Get("Location"), "http://secure.example.com/admin/login")
+
+	err := s.ModifyResponseHeaders(res)
+	expect(t, err, nil)
+
+	expect(t, res.Header.Get("Location"), "https://secure.example.com/admin/login")
 }
 
 /* Test Helpers */
