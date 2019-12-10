@@ -1370,6 +1370,57 @@ func TestModifyResponseHeadersWithSSLAndPathInLocationResponse(t *testing.T) {
 	expect(t, res.Header.Get("Location"), "https://secure.example.com/admin/login")
 }
 
+func TestCustomSecureContextKey(t *testing.T) {
+	s1 := New(Options{
+		BrowserXssFilter:      true,
+		CustomBrowserXssValue: "0",
+		SecureContextKey:      "totallySecureContextKey",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	var actual *http.Request
+	hf := func(w http.ResponseWriter, r *http.Request) {
+		actual = r
+	}
+
+	s1.HandlerFuncWithNextForRequestOnly(res, req, hf)
+	contextHeaders := actual.Context().Value(s1.ctxSecureHeaderKey).(http.Header)
+	expect(t, contextHeaders.Get(xssProtectionHeader), s1.opt.CustomBrowserXssValue)
+
+}
+
+func TestMultipleCustomSecureContextKeys(t *testing.T) {
+	s1 := New(Options{
+		BrowserXssFilter:      true,
+		CustomBrowserXssValue: "0",
+		SecureContextKey:      "totallySecureContextKey",
+	})
+
+	s2 := New(Options{
+		FeaturePolicy:    "test",
+		SecureContextKey: "anotherSecureContextKey",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	var actual *http.Request
+	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		actual = r
+	})
+
+	next := s1.HandlerForRequestOnly(hf)
+	s2.HandlerFuncWithNextForRequestOnly(res, req, next.ServeHTTP)
+
+	s1Headers := actual.Context().Value(s1.ctxSecureHeaderKey).(http.Header)
+	s2Headers := actual.Context().Value(s2.ctxSecureHeaderKey).(http.Header)
+
+	expect(t, s1Headers.Get(xssProtectionHeader), s1.opt.CustomBrowserXssValue)
+	expect(t, s2Headers.Get(featurePolicyHeader), s2.opt.FeaturePolicy)
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {

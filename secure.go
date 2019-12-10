@@ -27,8 +27,8 @@ const (
 	featurePolicyHeader  = "Feature-Policy"
 	expectCTHeader       = "Expect-CT"
 
-	ctxSecureHeaderKey = secureCtxKey("SecureResponseHeader")
-	cspNonceSize       = 16
+	ctxDefaultSecureHeaderKey = secureCtxKey("SecureResponseHeader")
+	cspNonceSize              = 16
 )
 
 // SSLHostFunc a type whose pointer is the type of field `SSLHostFunc` of `Options` struct
@@ -97,6 +97,8 @@ type Options struct {
 	STSSeconds int64
 	// ExpectCTHeader allows the Expect-CT header value to be set with a custom value. Default is "".
 	ExpectCTHeader string
+	// SecureContextKey allows a custom key to be specified for context storage.
+	SecureContextKey string
 }
 
 // Secure is a middleware that helps setup a few basic security features. A single secure.Options struct can be
@@ -111,6 +113,9 @@ type Secure struct {
 	// cRegexAllowedHosts saves the compiled regular expressions of the AllowedHosts
 	// option for subsequent use in processRequest
 	cRegexAllowedHosts []*regexp.Regexp
+
+	// ctxSecureHeaderKey is the key used for context storage for request modification.
+	ctxSecureHeaderKey secureCtxKey
 }
 
 // New constructs a new Secure instance with the supplied options.
@@ -141,6 +146,11 @@ func New(options ...Options) *Secure {
 			}
 			s.cRegexAllowedHosts = append(s.cRegexAllowedHosts, regex)
 		}
+	}
+
+	s.ctxSecureHeaderKey = ctxDefaultSecureHeaderKey
+	if len(s.opt.SecureContextKey) > 0 {
+		s.ctxSecureHeaderKey = secureCtxKey(s.opt.SecureContextKey)
 	}
 
 	return s
@@ -182,7 +192,7 @@ func (s *Secure) HandlerForRequestOnly(h http.Handler) http.Handler {
 		}
 
 		// Save response headers in the request context.
-		ctx := context.WithValue(r.Context(), ctxSecureHeaderKey, responseHeader)
+		ctx := context.WithValue(r.Context(), s.ctxSecureHeaderKey, responseHeader)
 
 		// No headers will be written to the ResponseWriter.
 		h.ServeHTTP(w, r.WithContext(ctx))
@@ -212,7 +222,7 @@ func (s *Secure) HandlerFuncWithNextForRequestOnly(w http.ResponseWriter, r *htt
 	// If there was an error, do not call next.
 	if err == nil && next != nil {
 		// Save response headers in the request context
-		ctx := context.WithValue(r.Context(), ctxSecureHeaderKey, responseHeader)
+		ctx := context.WithValue(r.Context(), s.ctxSecureHeaderKey, responseHeader)
 
 		// No headers will be written to the ResponseWriter.
 		next(w, r.WithContext(ctx))
@@ -450,7 +460,7 @@ func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
 			res.Header.Set("Location", location)
 		}
 
-		responseHeader := res.Request.Context().Value(ctxSecureHeaderKey)
+		responseHeader := res.Request.Context().Value(s.ctxSecureHeaderKey)
 		if responseHeader != nil {
 			for header, values := range responseHeader.(http.Header) {
 				if len(values) > 0 {
