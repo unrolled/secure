@@ -1388,7 +1388,6 @@ func TestCustomSecureContextKey(t *testing.T) {
 	s1.HandlerFuncWithNextForRequestOnly(res, req, hf)
 	contextHeaders := actual.Context().Value(s1.ctxSecureHeaderKey).(http.Header)
 	expect(t, contextHeaders.Get(xssProtectionHeader), s1.opt.CustomBrowserXssValue)
-
 }
 
 func TestMultipleCustomSecureContextKeys(t *testing.T) {
