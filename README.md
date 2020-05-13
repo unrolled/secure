@@ -359,7 +359,7 @@ func main() {
 }
 ~~~
 
-### [Negroni](https://github.com/codegangsta/negroni)
+### [Negroni](https://github.com/urfave/negroni)
 Note this implementation has a special helper function called `HandlerFuncWithNext`.
 ~~~ go
 // main.go
@@ -368,7 +368,7 @@ package main
 import (
     "net/http"
 
-    "github.com/codegangsta/negroni"
+    "github.com/urfave/negroni"
     "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 

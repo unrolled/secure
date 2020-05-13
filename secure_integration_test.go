@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/codegangsta/negroni"
+	"github.com/urfave/negroni"
 )
 
 // go test -tags=integration
