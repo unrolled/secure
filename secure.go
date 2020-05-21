@@ -250,6 +250,10 @@ func (s *Secure) Process(w http.ResponseWriter, r *http.Request) error {
 // In addition, the generated nonce for the request is returned as well as the error value.
 func (s *Secure) ProcessAndReturnNonce(w http.ResponseWriter, r *http.Request) (string, error) {
 	responseHeader, newR, err := s.processRequest(w, r)
+	if err != nil {
+		return "", err
+	}
+
 	addResponseHeaders(responseHeader, w)
 
 	return CSPNonce(newR.Context()), err
