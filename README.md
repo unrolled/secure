@@ -317,16 +317,18 @@ func main() {
         FrameDeny: true,
     })
 
-    app.Use(func(ctx iris.Context) {
-        err := secureMiddleware.Process(ctx.ResponseWriter(), ctx.Request())
-
-        // If there was an error, do not continue.
-        if err != nil {
-            return
-        }
-
-        ctx.Next()
-    })
+    app.Use(iris.FromStd(secureMiddleware.HandlerFuncWithNext))
+    // Identical to:
+    // app.Use(func(ctx iris.Context) {
+    //     err := secureMiddleware.Process(ctx.ResponseWriter(), ctx.Request())
+    //
+    //     // If there was an error, do not continue.
+    //     if err != nil {
+    //         return
+    //     }
+    //
+    //     ctx.Next()
+    // })
 
     app.Get("/home", func(ctx iris.Context) {
         ctx.Writef("X-Frame-Options header is now `%s`.", "DENY")
