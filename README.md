@@ -306,31 +306,33 @@ func main() {
 package main
 
 import (
-    "github.com/kataras/iris"
+    "github.com/kataras/iris/v12"
     "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
 
 func main() {
+    app := iris.New()
+
     secureMiddleware := secure.New(secure.Options{
         FrameDeny: true,
     })
 
-    iris.UseFunc(func(c *iris.Context) {
-        err := secureMiddleware.Process(c.ResponseWriter, c.Request)
+    app.Use(func(ctx iris.Context) {
+        err := secureMiddleware.Process(ctx.ResponseWriter(), ctx.Request())
 
         // If there was an error, do not continue.
         if err != nil {
             return
         }
 
-        c.Next()
+        ctx.Next()
     })
 
-    iris.Get("/home", func(c *iris.Context) {
-        c.SendStatus(200, "X-Frame-Options header is now `DENY`.")
+    app.Get("/home", func(ctx iris.Context) {
+        ctx.Writef("X-Frame-Options header is now `%s`.", "DENY")
     })
 
-    iris.Listen(":8080")
+    app.Listen(":8080")
 }
 ~~~
 
