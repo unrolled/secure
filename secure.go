@@ -74,6 +74,7 @@ type Options struct {
 	// CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option. Default is "".
 	CustomFrameOptionsValue string
 	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
+	// Deprecated: This feature is no longer recommended. Though some browsers might still support it, it may have already been removed from the relevant web standards, may be in the process of being dropped, or may only be kept for compatibility purposes. Avoid using it, and update existing code if possible.
 	PublicKey string
 	// ReferrerPolicy allows sites to control when browsers will pass the Referer header to other sites. Default is "".
 	ReferrerPolicy string
