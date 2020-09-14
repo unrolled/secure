@@ -193,11 +193,11 @@ func main() {
     })
 
     r := chi.NewRouter()
-
+    r.Use(secureMiddleware.Handler)
     r.Get("/", func(w http.ResponseWriter, r *http.Request) {
         w.Write([]byte("X-Frame-Options header is now `DENY`."))
     })
-    r.Use(secureMiddleware.Handler)
+
 
     http.ListenAndServe("127.0.0.1:3000", r)
 }
