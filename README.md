@@ -194,10 +194,10 @@ func main() {
 
     r := chi.NewRouter()
     r.Use(secureMiddleware.Handler)
+
     r.Get("/", func(w http.ResponseWriter, r *http.Request) {
         w.Write([]byte("X-Frame-Options header is now `DENY`."))
     })
-
 
     http.ListenAndServe("127.0.0.1:3000", r)
 }
@@ -344,7 +344,7 @@ package main
 import (
     "log"
     "net/http"
-    
+
     "github.com/gorilla/mux"
     "github.com/unrolled/secure" // or "gopkg.in/unrolled/secure.v1"
 )
@@ -353,7 +353,7 @@ func main() {
     secureMiddleware := secure.New(secure.Options{
         FrameDeny: true,
     })
-    
+
     r := mux.NewRouter()
     r.Use(secureMiddleware.Handler)
     http.Handle("/", r)
