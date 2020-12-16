@@ -1,0 +1,29 @@
+on:
+  push:
+    branches:
+      - master
+      - v1
+  pull_request:
+    branches:
+      - "**"
+name: Test
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.14.x, 1.15.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Dependencies
+        run: go get -u honnef.co/go/tools/cmd/staticcheck
+        env:
+          GO111MODULE: off
+      - name: Test
+        run: go test -v -race -tags=integration
