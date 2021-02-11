@@ -1126,6 +1126,20 @@ func TestFeaturePolicy(t *testing.T) {
 	expect(t, res.Header().Get("Feature-Policy"), "vibrate 'none';")
 }
 
+func TestPermissionsPolicy(t *testing.T) {
+	s := New(Options{
+		PermissionsPolicy: "geolocation=(self)",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Permissions-Policy"), "geolocation=(self)")
+}
+
 func TestExpectCT(t *testing.T) {
 	s := New(Options{
 		ExpectCTHeader: `enforce, max-age=30, report-uri="https://www.example.com/ct-report"`,
