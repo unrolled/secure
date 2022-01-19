@@ -27,6 +27,7 @@ const (
 	featurePolicyHeader     = "Feature-Policy"
 	permissionsPolicyHeader = "Permissions-Policy"
 	expectCTHeader          = "Expect-CT"
+	coopHeader              = "Cross-Origin-Opener-Policy"
 
 	ctxDefaultSecureHeaderKey = secureCtxKey("SecureResponseHeader")
 	cspNonceSize              = 16
@@ -84,6 +85,9 @@ type Options struct {
 	FeaturePolicy string
 	// PermissionsPolicy allows to selectively enable and disable use of various browser features and APIs. Default is "".
 	PermissionsPolicy string
+	// CrossOriginOpenerPolicy allows you to ensure a top-level document does not share a browsing context group with cross-origin documents. Default is "".
+	// Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy
+	CrossOriginOpenerPolicy string
 	// SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
 	SSLHost string
 	// AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
@@ -433,6 +437,11 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// Permissions Policy header.
 	if len(s.opt.PermissionsPolicy) > 0 {
 		responseHeader.Set(permissionsPolicyHeader, s.opt.PermissionsPolicy)
+	}
+
+	// Cross Origin Opener Policy header.
+	if len(s.opt.CrossOriginOpenerPolicy) > 0 {
+		responseHeader.Set(coopHeader, s.opt.CrossOriginOpenerPolicy)
 	}
 
 	// Expect-CT header.
