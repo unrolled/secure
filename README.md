@@ -83,6 +83,7 @@ s := secure.New(secure.Options{
     ReferrerPolicy: "same-origin", // ReferrerPolicy allows the Referrer-Policy header with the value to be set with a custom value. Default is "".
     FeaturePolicy: "vibrate 'none';", // Deprecated: this header has been renamed to PermissionsPolicy. FeaturePolicy allows the Feature-Policy header with the value to be set with a custom value. Default is "".
     PermissionsPolicy: "fullscreen=(), geolocation=()", // PermissionsPolicy allows the Permissions-Policy header with the value to be set with a custom value. Default is "".
+    CrossOriginOpenerPolicy: "same-origin", // CrossOriginOpenerPolicy allows the Cross-Origin-Opener-Policy header with the value to be set with a custom value. Default is "".
     ExpectCTHeader: `enforce, max-age=30, report-uri="https://www.example.com/ct-report"`,
 
     IsDevelopment: true, // This will cause the AllowedHosts, SSLRedirect, and STSSeconds/STSIncludeSubdomains options to be ignored during development. When deploying to production, be sure to set this to false.
@@ -119,6 +120,7 @@ l := secure.New(secure.Options{
     ReferrerPolicy: "",
     FeaturePolicy: "",
     PermissionsPolicy: "",
+    CrossOriginOpenerPolicy: "",
     ExpectCTHeader: "",
     IsDevelopment: false,
 })
