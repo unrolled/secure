@@ -36,6 +36,9 @@ const (
 // SSLHostFunc a type whose pointer is the type of field `SSLHostFunc` of `Options` struct
 type SSLHostFunc func(host string) (newHost string)
 
+// AllowedHostsFunc a custom function type that returns a list of strings used in place of AllowedHosts list
+type AllowedHostsFunc func() []string
+
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Bad Host", http.StatusInternalServerError)
 }
@@ -90,6 +93,8 @@ type Options struct {
 	CrossOriginOpenerPolicy string
 	// SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
 	SSLHost string
+	// AllowedHostsFunc is a custom function that returns a list of fully qualified domain names that are allowed. If set, AllowedHosts will be ignored
+	AllowedHostsFunc AllowedHostsFunc
 	// AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
 	AllowedHosts []string
 	// AllowedHostsAreRegex determines, if the provided slice contains valid regular expressions. If this flag is set to true, every request's
@@ -290,6 +295,10 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	// Allowed hosts check.
+	if s.opt.AllowedHostsFunc != nil {
+		s.opt.AllowedHosts = s.opt.AllowedHostsFunc()
+	}
+
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
 		if s.opt.AllowedHostsAreRegex {
