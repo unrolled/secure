@@ -1463,10 +1463,10 @@ func TestAllowHostsFunc(t *testing.T) {
 	expect(t, res.Body.String(), `bar`)
 }
 
-func TestAllowHostsFuncIgnoreAllowedHostsList(t *testing.T) {
+func TestAllowHostsFuncWithAllowedHostsList(t *testing.T) {
 	s := New(Options{
-		AllowedHosts:     []string{"www.blocked.com"},
-		AllowedHostsFunc: func() []string { return []string{"www.allow.com"} },
+		AllowedHosts:     []string{"www.allow.com"},
+		AllowedHostsFunc: func() []string { return []string{"www.allowfunc.com"} },
 	})
 
 	res := httptest.NewRecorder()
