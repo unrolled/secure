@@ -295,17 +295,12 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	// Allowed hosts check.
-	isGoodHost := false
 	if s.opt.AllowedHostsFunc != nil && !s.opt.IsDevelopment {
-		for _, allowedHost := range s.opt.AllowedHostsFunc() {
-			if strings.EqualFold(allowedHost, host) {
-				isGoodHost = true
-				break
-			}
-		}
+		s.opt.AllowedHosts = append(s.opt.AllowedHosts, s.opt.AllowedHostsFunc()...)
 	}
 
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
+		isGoodHost := false
 		if s.opt.AllowedHostsAreRegex {
 			for _, allowedHost := range s.cRegexAllowedHosts {
 				if match := allowedHost.MatchString(host); match {
@@ -321,11 +316,10 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 				}
 			}
 		}
-	}
-
-	if !isGoodHost {
-		s.badHostHandler.ServeHTTP(w, r)
-		return nil, nil, fmt.Errorf("bad host name: %s", host)
+		if !isGoodHost {
+			s.badHostHandler.ServeHTTP(w, r)
+			return nil, nil, fmt.Errorf("bad host name: %s", host)
+		}
 	}
 
 	// Determine if we are on HTTPS.
