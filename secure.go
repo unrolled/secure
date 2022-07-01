@@ -295,11 +295,13 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	// Allowed hosts check.
-	if s.opt.AllowedHostsFunc != nil && !s.opt.IsDevelopment {
-		s.opt.AllowedHosts = append(s.opt.AllowedHosts, s.opt.AllowedHostsFunc()...)
+	combinedAllowedHosts := s.opt.AllowedHosts
+
+	if s.opt.AllowedHostsFunc != nil {
+		combinedAllowedHosts = append(combinedAllowedHosts, s.opt.AllowedHostsFunc()...)
 	}
 
-	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
+	if len(combinedAllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
 		if s.opt.AllowedHostsAreRegex {
 			for _, allowedHost := range s.cRegexAllowedHosts {
@@ -309,7 +311,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 				}
 			}
 		} else {
-			for _, allowedHost := range s.opt.AllowedHosts {
+			for _, allowedHost := range combinedAllowedHosts {
 				if strings.EqualFold(allowedHost, host) {
 					isGoodHost = true
 					break
