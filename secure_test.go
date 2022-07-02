@@ -1450,12 +1450,12 @@ func TestMultipleCustomSecureContextKeys(t *testing.T) {
 
 func TestAllowHostsFunc(t *testing.T) {
 	s := New(Options{
-		AllowedHostsFunc: func() []string { return []string{"www.example.com"} },
+		AllowedHostsFunc: func() []string { return []string{"www.allow-func.com"} },
 	})
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
-	req.Host = "www.example.com"
+	req.Host = "www.allow-func.com"
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -1466,7 +1466,7 @@ func TestAllowHostsFunc(t *testing.T) {
 func TestAllowHostsFuncWithAllowedHostsList(t *testing.T) {
 	s := New(Options{
 		AllowedHosts:     []string{"www.allow.com"},
-		AllowedHostsFunc: func() []string { return []string{"www.allowfunc.com"} },
+		AllowedHostsFunc: func() []string { return []string{"www.allow-func.com"} },
 	})
 
 	res := httptest.NewRecorder()
@@ -1475,6 +1475,28 @@ func TestAllowHostsFuncWithAllowedHostsList(t *testing.T) {
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
+func TestAllowHostsFuncWithAllowedHostsListWithRegex(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:         []string{"*\\.allow\\.com"},
+		AllowedHostsFunc:     func() []string { return []string{"foo.bar.allow.com"} },
+		AllowedHostsAreRegex: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "foo.bar.allow.com"
+	s.Handler(myHandler).ServeHTTP(res, req)
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/foo", nil)
+	req.Host = "bar.allow.com"
+	s.Handler(myHandler).ServeHTTP(res, req)
 	expect(t, res.Code, http.StatusOK)
 	expect(t, res.Body.String(), `bar`)
 }
