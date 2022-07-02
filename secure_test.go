@@ -1448,6 +1448,37 @@ func TestMultipleCustomSecureContextKeys(t *testing.T) {
 	expect(t, s2Headers.Get(featurePolicyHeader), s2.opt.FeaturePolicy)
 }
 
+func TestAllowHostsFunc(t *testing.T) {
+	s := New(Options{
+		AllowedHostsFunc: func() []string { return []string{"www.example.com"} },
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
+func TestAllowHostsFuncWithAllowedHostsList(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:     []string{"www.allow.com"},
+		AllowedHostsFunc: func() []string { return []string{"www.allowfunc.com"} },
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.allow.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
 	if a != b {
