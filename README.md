@@ -63,6 +63,7 @@ Secure comes with a variety of configuration options (Note: these are not the de
 s := secure.New(secure.Options{
     AllowedHosts: []string{"ssl.example.com"}, // AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
     AllowedHostsFunc: func() []string { return []string{"example.com", "www.example.com" } // AllowedHostsFunc is a custom function that returns a list of fully qualified domain names that are allowed. This can be used in combination with the above AllowedHosts.
+    IsHostAllowed: func(origin string) bool { return true } // IsHostAllowed is a custom function that returns true if origin is an allowed host. If set, value will be used in combination with AllowedHostsFunc and AllowedHosts list
     AllowedHostsAreRegex: false,  // AllowedHostsAreRegex determines, if the provided AllowedHosts slice contains valid regular expressions. This does not apply to the `AllowedHostsFunc` values! Default is false.
     HostsProxyHeaders: []string{"X-Forwarded-Hosts"}, // HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
     SSLRedirect: true, // If SSLRedirect is set to true, then only allow HTTPS requests. Default is false.
@@ -103,6 +104,7 @@ s := secure.New()
 l := secure.New(secure.Options{
     AllowedHosts: []string,
     AllowedHostsFunc: nil,
+    IsHostAllowed: nil,
     AllowedHostsAreRegex: false,
     HostsProxyHeaders: []string,
     SSLRedirect: false,
