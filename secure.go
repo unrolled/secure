@@ -37,7 +37,7 @@ const (
 type SSLHostFunc func(host string) (newHost string)
 
 // AllowedHostsFunc a custom function type that returns a list of strings used in place of AllowedHosts list
-type AllowedHostsFunc func() []string
+type AllowedHostsFunc func(r *http.Request) []string
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Bad Host", http.StatusInternalServerError)
@@ -298,7 +298,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	combinedAllowedHosts := s.opt.AllowedHosts
 
 	if s.opt.AllowedHostsFunc != nil {
-		combinedAllowedHosts = append(combinedAllowedHosts, s.opt.AllowedHostsFunc()...)
+		combinedAllowedHosts = append(combinedAllowedHosts, s.opt.AllowedHostsFunc(r)...)
 	}
 
 	if len(combinedAllowedHosts) > 0 && !s.opt.IsDevelopment {
