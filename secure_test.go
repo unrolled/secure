@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -1497,6 +1498,47 @@ func TestAllowHostsFuncWithAllowedHostsListWithRegex(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/foo", nil)
 	req.Host = "bar.allow.com"
 	s.Handler(myHandler).ServeHTTP(res, req)
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
+func TestAllowHostsFuncWithAllowedHostsListAndIsHostAllowed(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:     []string{"www.allow.com"},
+		AllowedHostsFunc: func() []string { return []string{"www.allow-func.com"} },
+		IsHostAllowed: func(s string) bool {
+			return false
+		},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.allow.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Body.String(), `bar`)
+}
+
+func TestIsHostAllowed(t *testing.T) {
+	s := New(Options{
+		AllowedHosts:     []string{"www.notallowed.com"},
+		AllowedHostsFunc: func() []string { return []string{"www.not-allow-func.com"} },
+		IsHostAllowed: func(s string) bool {
+			if strings.EqualFold(s, "www.allow.com") {
+				return true
+			}
+			return false
+		},
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	req.Host = "www.allow.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
 	expect(t, res.Code, http.StatusOK)
 	expect(t, res.Body.String(), `bar`)
 }
