@@ -1526,10 +1526,7 @@ func TestIsHostAllowed(t *testing.T) {
 		AllowedHosts:     []string{"www.notallowed.com"},
 		AllowedHostsFunc: func() []string { return []string{"www.not-allow-func.com"} },
 		IsHostAllowed: func(s string) bool {
-			if strings.EqualFold(s, "www.allow.com") {
-				return true
-			}
-			return false
+			return strings.EqualFold(s, "www.allow.com")
 		},
 	})
 
