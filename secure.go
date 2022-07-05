@@ -329,7 +329,13 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 				}
 			}
 		}
-		if !isGoodHost && !s.opt.IsHostAllowed(r.Host) {
+
+		var isHostAllowed bool
+		if s.opt.IsHostAllowed != nil {
+			isHostAllowed = s.opt.IsHostAllowed(r.Host)
+		}
+
+		if !isGoodHost && !isHostAllowed {
 			s.badHostHandler.ServeHTTP(w, r)
 			return nil, nil, fmt.Errorf("bad host name: %s", host)
 		}
