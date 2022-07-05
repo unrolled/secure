@@ -39,6 +39,9 @@ type SSLHostFunc func(host string) (newHost string)
 // AllowedHostsFunc is a custom function type that can be used to dynamically return a slice of strings that will be used in the `AllowHosts` check.
 type AllowedHostsFunc func() []string
 
+// IsHostAllowed is a custom function type that can be used to check if origin is an allowed host
+type IsHostAllowed func(string) bool
+
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Bad Host", http.StatusInternalServerError)
 }
@@ -97,6 +100,8 @@ type Options struct {
 	AllowedHosts []string
 	// AllowedHostsFunc is a custom function that returns a slice of fully qualified domain names that are allowed. If set, values will be used in combination with the above AllowedHosts. Default is nil.
 	AllowedHostsFunc AllowedHostsFunc
+	// IsHostAllowed is a custom function that returns true if origin is an allowed host. If set, value will be used in combination with AllowedHostsFunc and AllowedHosts list
+	IsHostAllowed IsHostAllowed
 	// AllowedHostsAreRegex determines, if the provided `AllowedHosts` slice contains valid regular expressions. This does not apply to `AllowedHostsFunc`! If this flag is set to true, every request's host will be checked against these expressions. Default is false.
 	AllowedHostsAreRegex bool
 	// HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
