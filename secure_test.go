@@ -1523,8 +1523,8 @@ func TestAllowHostsFuncWithAllowedHostsListAndIsHostAllowed(t *testing.T) {
 
 func TestIsHostAllowed(t *testing.T) {
 	s := New(Options{
-		AllowedHosts:     []string{"www.notallowed.com"},
-		AllowedHostsFunc: func() []string { return []string{"www.not-allow-func.com"} },
+		AllowedHosts:     nil,
+		AllowedHostsFunc: nil,
 		IsHostAllowed: func(s string) bool {
 			return strings.EqualFold(s, "www.allow.com")
 		},
