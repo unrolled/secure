@@ -36,11 +36,15 @@ const (
 // SSLHostFunc is a custom function type that can be used to dynamically set the SSL host of a request.
 type SSLHostFunc func(host string) (newHost string)
 
-// AllowedHostsFunc is a custom function type that can be used to dynamically return a slice of strings that will be used in the `AllowHosts` check.
-type AllowedHostsFunc func() []string
+// AllowRequestFunc is a custom function type that can be used to dynamically determine if a request should proceed or not.
+type AllowRequestFunc func(r *http.Request) bool
 
 func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Bad Host", http.StatusInternalServerError)
+}
+
+func defaultBadRequestHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Bad Request", http.StatusBadRequest)
 }
 
 // Options is a struct for specifying configuration options for the secure.Secure middleware.
@@ -95,10 +99,10 @@ type Options struct {
 	SSLHost string
 	// AllowedHosts is a slice of fully qualified domain names that are allowed. Default is an empty slice, which allows any and all host names.
 	AllowedHosts []string
-	// AllowedHostsFunc is a custom function that returns a slice of fully qualified domain names that are allowed. If set, values will be used in combination with the above AllowedHosts. Default is nil.
-	AllowedHostsFunc AllowedHostsFunc
-	// AllowedHostsAreRegex determines, if the provided `AllowedHosts` slice contains valid regular expressions. This does not apply to `AllowedHostsFunc`! If this flag is set to true, every request's host will be checked against these expressions. Default is false.
+	// AllowedHostsAreRegex determines, if the provided `AllowedHosts` slice contains valid regular expressions. If this flag is set to true, every request's host will be checked against these expressions. Default is false.
 	AllowedHostsAreRegex bool
+	// AllowRequestFunc is a custom function that allows you to determine if the request should proceed or not based on your own custom logic. Default is nil.
+	AllowRequestFunc AllowRequestFunc
 	// HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
 	HostsProxyHeaders []string
 	// SSLHostFunc is a function pointer, the return value of the function is the host name that has same functionality as `SSHost`. Default is nil.
@@ -123,6 +127,9 @@ type Secure struct {
 	// badHostHandler is the handler used when an incorrect host is passed in.
 	badHostHandler http.Handler
 
+	// badRequestHandler is the handler used when the AllowRequestFunc rejects a request.
+	badRequestHandler http.Handler
+
 	// cRegexAllowedHosts saves the compiled regular expressions of the AllowedHosts
 	// option for subsequent use in processRequest
 	cRegexAllowedHosts []*regexp.Regexp
@@ -146,8 +153,9 @@ func New(options ...Options) *Secure {
 	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s") || strings.Contains(o.ContentSecurityPolicyReportOnly, "%[1]s")
 
 	s := &Secure{
-		opt:            o,
-		badHostHandler: http.HandlerFunc(defaultBadHostHandler),
+		opt:               o,
+		badHostHandler:    http.HandlerFunc(defaultBadHostHandler),
+		badRequestHandler: http.HandlerFunc(defaultBadRequestHandler),
 	}
 
 	if s.opt.AllowedHostsAreRegex {
@@ -172,6 +180,11 @@ func New(options ...Options) *Secure {
 // SetBadHostHandler sets the handler to call when secure rejects the host name.
 func (s *Secure) SetBadHostHandler(handler http.Handler) {
 	s.badHostHandler = handler
+}
+
+// SetBadRequestHandler sets the handler to call when the AllowRequestFunc rejects a request.
+func (s *Secure) SetBadRequestHandler(handler http.Handler) {
+	s.badRequestHandler = handler
 }
 
 // Handler implements the http.HandlerFunc for integration with the standard net/http lib.
@@ -294,14 +307,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	// Allowed hosts check.
-	combinedAllowedHosts := s.opt.AllowedHosts
-	var allowedFuncHosts []string
-	if s.opt.AllowedHostsFunc != nil {
-		allowedFuncHosts = s.opt.AllowedHostsFunc()
-		combinedAllowedHosts = append(combinedAllowedHosts, allowedFuncHosts...)
-	}
-
-	if len(combinedAllowedHosts) > 0 && !s.opt.IsDevelopment {
+	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
 		if s.opt.AllowedHostsAreRegex {
 			for _, allowedHost := range s.cRegexAllowedHosts {
@@ -310,14 +316,8 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 					break
 				}
 			}
-			for _, allowedHost := range allowedFuncHosts {
-				if strings.EqualFold(allowedHost, host) {
-					isGoodHost = true
-					break
-				}
-			}
 		} else {
-			for _, allowedHost := range combinedAllowedHosts {
+			for _, allowedHost := range s.opt.AllowedHosts {
 				if strings.EqualFold(allowedHost, host) {
 					isGoodHost = true
 					break
@@ -378,6 +378,12 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 			http.Redirect(w, r, url.String(), status)
 			return nil, nil, fmt.Errorf("redirecting to HTTPS")
 		}
+	}
+
+	// If the AllowRequestFunc is set, call it and exit early if needed.
+	if s.opt.AllowRequestFunc != nil && !s.opt.AllowRequestFunc(r) {
+		s.badRequestHandler.ServeHTTP(w, r)
+		return nil, nil, fmt.Errorf("request not allowed")
 	}
 
 	// Create our header container.

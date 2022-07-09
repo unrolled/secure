@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -1448,14 +1449,14 @@ func TestMultipleCustomSecureContextKeys(t *testing.T) {
 	expect(t, s2Headers.Get(featurePolicyHeader), s2.opt.FeaturePolicy)
 }
 
-func TestAllowHostsFunc(t *testing.T) {
+func TestAllowRequestFuncTrue(t *testing.T) {
 	s := New(Options{
-		AllowedHostsFunc: func() []string { return []string{"www.allow-func.com"} },
+		AllowRequestFunc: func(r *http.Request) bool { return true },
 	})
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
-	req.Host = "www.allow-func.com"
+	req.Host = "www.allow-request.com"
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -1463,42 +1464,37 @@ func TestAllowHostsFunc(t *testing.T) {
 	expect(t, res.Body.String(), `bar`)
 }
 
-func TestAllowHostsFuncWithAllowedHostsList(t *testing.T) {
+func TestAllowRequestFuncFalse(t *testing.T) {
 	s := New(Options{
-		AllowedHosts:     []string{"www.allow.com"},
-		AllowedHostsFunc: func() []string { return []string{"www.allow-func.com"} },
+		AllowRequestFunc: func(r *http.Request) bool { return false },
 	})
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
-	req.Host = "www.allow.com"
+	req.Host = "www.deny-request.com"
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
-	expect(t, res.Code, http.StatusOK)
-	expect(t, res.Body.String(), `bar`)
+	expect(t, res.Code, http.StatusBadRequest)
 }
 
-func TestAllowHostsFuncWithAllowedHostsListWithRegex(t *testing.T) {
+func TestBadRequestHandler(t *testing.T) {
 	s := New(Options{
-		AllowedHosts:         []string{"*\\.allow\\.com"},
-		AllowedHostsFunc:     func() []string { return []string{"foo.bar.allow.com"} },
-		AllowedHostsAreRegex: true,
+		AllowRequestFunc: func(r *http.Request) bool { return false },
 	})
+	badRequestFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "custom error", http.StatusConflict)
+	})
+	s.SetBadRequestHandler(badRequestFunc)
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo", nil)
-	req.Host = "foo.bar.allow.com"
-	s.Handler(myHandler).ServeHTTP(res, req)
-	expect(t, res.Code, http.StatusOK)
-	expect(t, res.Body.String(), `bar`)
+	req.Host = "www.deny-request.com"
 
-	res = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/foo", nil)
-	req.Host = "bar.allow.com"
 	s.Handler(myHandler).ServeHTTP(res, req)
-	expect(t, res.Code, http.StatusOK)
-	expect(t, res.Body.String(), `bar`)
+
+	expect(t, res.Code, http.StatusConflict)
+	expect(t, strings.TrimSpace(res.Body.String()), `custom error`)
 }
 
 /* Test Helpers */
