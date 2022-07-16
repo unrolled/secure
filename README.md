@@ -62,8 +62,8 @@ Secure comes with a variety of configuration options (Note: these are not the de
 // ...
 s := secure.New(secure.Options{
     AllowedHosts: []string{"ssl.example.com"}, // AllowedHosts is a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.
-    AllowedHostsFunc: func() []string { return []string{"example.com", "www.example.com" } // AllowedHostsFunc is a custom function that returns a list of fully qualified domain names that are allowed. This can be used in combination with the above AllowedHosts.
-    AllowedHostsAreRegex: false,  // AllowedHostsAreRegex determines, if the provided AllowedHosts slice contains valid regular expressions. This does not apply to the `AllowedHostsFunc` values! Default is false.
+    AllowedHostsAreRegex: false,  // AllowedHostsAreRegex determines, if the provided AllowedHosts slice contains valid regular expressions. Default is false.
+    AllowRequestFunc: nil, // AllowRequestFunc is a custom function type that allows you to determine if the request should proceed or not based on your own custom logic. Default is nil.
     HostsProxyHeaders: []string{"X-Forwarded-Hosts"}, // HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
     SSLRedirect: true, // If SSLRedirect is set to true, then only allow HTTPS requests. Default is false.
     SSLTemporaryRedirect: false, // If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
@@ -102,8 +102,8 @@ s := secure.New()
 
 l := secure.New(secure.Options{
     AllowedHosts: []string,
-    AllowedHostsFunc: nil,
     AllowedHostsAreRegex: false,
+    AllowRequestFunc: nil,
     HostsProxyHeaders: []string,
     SSLRedirect: false,
     SSLTemporaryRedirect: false,
@@ -127,11 +127,20 @@ l := secure.New(secure.Options{
     IsDevelopment: false,
 })
 ~~~
-Also note the default bad host handler returns an error:
+The default bad host handler returns the following error:
 ~~~ go
 http.Error(w, "Bad Host", http.StatusInternalServerError)
 ~~~
-Call `secure.SetBadHostHandler` to change the bad host handler.
+Call `secure.SetBadHostHandler` to set your own custom handler.
+
+The default bad request handler returns the following error:
+~~~ go
+http.Error(w, "Bad Request", http.StatusBadRequest)
+~~~
+Call `secure.SetBadRequestHandler` to set your own custom handler.
+
+### Allow Request Function
+Secure allows you to set a custom function (`func(r *http.Request) bool`) for the `AllowRequestFunc` option. You can use this function as a custom filter to allow the request to continue or simply reject it. This can be handy if you need to do any dynamic filtering on any of the request properties. It should be noted that this function will be called on every request, so be sure to make your checks quick and not relying on time consuming external calls (or you will be slowing down all requests). See above on how to set a custom handler for the rejected requests.
 
 ### Redirecting HTTP to HTTPS
 If you want to redirect all HTTP requests to HTTPS, you can use the following example.
