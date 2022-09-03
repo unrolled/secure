@@ -56,7 +56,6 @@ func TestContentSecurityPolicyBuilder_Build_SingleDirective(t *testing.T) {
 }
 
 func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
-
 	tests := []struct {
 		name       string
 		directives map[string]([]string)
@@ -136,7 +135,6 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 				if !reflect.DeepEqual(gotParts, tt.wantParts) {
 					t.Errorf("ContentSecurityPolicyBuilder.Build() = '%v', expected following parts %v", got, gotParts)
 				}
-
 			}
 		})
 	}

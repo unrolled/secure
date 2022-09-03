@@ -106,7 +106,6 @@ func buildDirectiveTrustedTypes(
 	sb *strings.Builder,
 	values []string,
 ) error {
-
 	sb.WriteString(TrustedTypes)
 
 	for _, val := range values {

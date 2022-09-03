@@ -25,7 +25,7 @@ const (
 	WorkerSrc     = "worker-src"
 
 	// Document Directives
-	BaseUri = "base-uri"
+	BaseURI = "base-uri"
 	Sandbox = "sandbox"
 
 	// Navigation directives
@@ -34,7 +34,7 @@ const (
 	NavigateTo     = "navigate-to"
 
 	// Reporting directives
-	ReportUri = "report-uri"
+	ReportURI = "report-uri"
 	ReportTo  = "report-to"
 
 	// Other directives
