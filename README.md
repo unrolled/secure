@@ -188,6 +188,27 @@ The STS header will only be sent on verified HTTPS connections (and when `IsDeve
 ### Content Security Policy
 If you need dynamic support for CSP while using Websockets, check out this other middleware [awakenetworks/csp](https://github.com/awakenetworks/csp).
 
+Otherwise you can use the CSP Builder to create a CSP in a safer way:
+
+~~~ go
+import (
+	"github.com/unrolled/secure"
+	"github.com/unrolled/secure/cspbuilder"
+)
+
+cspBuilder := cspbuilder.Builder{
+	Directives: map[string][]string{
+		cspbuilder.DefaultSrc: {"self"},
+		cspbuilder.ScriptSrc:  {"self", "www.google-analytics.com"},
+		cspbuilder.ImgSrc:     {"*"},
+	},
+}
+
+opt := secure.Options{
+	ContentSecurityPolicy: cspBuilder.MustBuild(),
+}
+~~~
+
 ## Integration examples
 
 ### [chi](https://github.com/pressly/chi)
