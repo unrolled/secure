@@ -6,7 +6,7 @@ Package secure is an HTTP middleware for Go that facilitates some quick security
 	import (
 	    "net/http"
 
-	    "github.com/unrolled/secure"  // or "gopkg.in/unrolled/secure.v1"
+	    "github.com/unrolled/secure"
 	)
 
 	var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
