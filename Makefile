@@ -6,7 +6,7 @@ help: ## Displays this help message.
 
 test: ## Runs the tests, vetting, and golangci linter.
 	golangci-lint run ./...
-	go test -v -cover -race -count=1 .
+	go test -v -cover -race -count=1 ./...
 	go vet .
 
 ci: ## Runs on the tests and vetting checks (specific for CI).
