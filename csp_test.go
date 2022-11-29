@@ -11,7 +11,7 @@ import (
 
 // cspHandler writes the nonce out as the response body.
 var cspHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(CSPNonce(r.Context())))
+	_, _ = w.Write([]byte(CSPNonce(r.Context())))
 })
 
 func TestCSPNonce(t *testing.T) {

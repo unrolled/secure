@@ -10,7 +10,7 @@ import (
 )
 
 var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("bar"))
+	_, _ = w.Write([]byte("bar"))
 })
 
 func TestNoConfig(t *testing.T) {
@@ -942,7 +942,7 @@ func TestInlineSecure(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s.HandlerFuncWithNext(w, r, nil)
-		w.Write([]byte("bar"))
+		_, _ = w.Write([]byte("bar"))
 	})
 
 	handler.ServeHTTP(res, req)
@@ -961,7 +961,7 @@ func TestInlineSecureForRequestOnly(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s.HandlerFuncWithNextForRequestOnly(w, r, nil)
-		w.Write([]byte("bar"))
+		_, _ = w.Write([]byte("bar"))
 	})
 
 	handler.ServeHTTP(res, req)
