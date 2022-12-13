@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	// Fetch Directives
+	// Fetch Directives.
 	ChildSrc      = "child-src"
 	ConnectSrc    = "connect-src"
 	DefaultSrc    = "default-src"
@@ -24,20 +24,20 @@ const (
 	StyleSrcElem  = "style-src-elem"
 	WorkerSrc     = "worker-src"
 
-	// Document Directives
+	// Document Directives.
 	BaseURI = "base-uri"
 	Sandbox = "sandbox"
 
-	// Navigation directives
+	// Navigation directives.
 	FormAction     = "form-action"
 	FrameAncestors = "frame-ancestors"
 	NavigateTo     = "navigate-to"
 
-	// Reporting directives
+	// Reporting directives.
 	ReportURI = "report-uri"
 	ReportTo  = "report-to"
 
-	// Other directives
+	// Other directives.
 	RequireTrustedTypesFor  = "require-trusted-types-for"
 	TrustedTypes            = "trusted-types"
 	UpgradeInsecureRequests = "upgrade-insecure-requests"
@@ -53,6 +53,7 @@ func (builder *Builder) MustBuild() string {
 	if err != nil {
 		panic(err)
 	}
+
 	return policy
 }
 

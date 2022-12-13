@@ -11,6 +11,7 @@ func buildDirectiveSandbox(sb *strings.Builder, values []string) error {
 		sb.WriteString(Sandbox)
 		return nil
 	}
+
 	if len(values) > 1 {
 		return fmt.Errorf("too many values set for directive %s", Sandbox)
 	}
@@ -44,15 +45,13 @@ func buildDirectiveSandbox(sb *strings.Builder, values []string) error {
 	return nil
 }
 
-func buildDirectiveFrameAncestors(
-	sb *strings.Builder,
-	values []string,
-) error {
+func buildDirectiveFrameAncestors(sb *strings.Builder, values []string) error {
 	if len(values) == 0 {
 		return fmt.Errorf("no values set for directive %s", FrameAncestors)
 	}
 
 	sb.WriteString(FrameAncestors)
+
 	for _, val := range values {
 		if strings.HasPrefix(val, "'") && strings.HasSuffix(val, "'") {
 			switch val {
@@ -62,19 +61,19 @@ func buildDirectiveFrameAncestors(
 				return fmt.Errorf("unallowed value %s for directive %s", val, FrameAncestors)
 			}
 		}
+
 		sb.WriteString(" ")
 		sb.WriteString(val)
 	}
+
 	return nil
 }
 
-func buildDirectiveReportTo(
-	sb *strings.Builder,
-	values []string,
-) error {
+func buildDirectiveReportTo(sb *strings.Builder, values []string) error {
 	if len(values) == 0 {
 		return fmt.Errorf("no values set for directive %s", ReportTo)
 	}
+
 	if len(values) > 1 {
 		return fmt.Errorf("too many values set for directive %s", ReportTo)
 	}
@@ -86,10 +85,7 @@ func buildDirectiveReportTo(
 	return nil
 }
 
-func buildDirectiveRequireTrustedTypesFor(
-	sb *strings.Builder,
-	values []string,
-) error {
+func buildDirectiveRequireTrustedTypesFor(sb *strings.Builder, values []string) error {
 	const allowedValue = "'script'"
 	if len(values) != 1 || values[0] != allowedValue {
 		return fmt.Errorf("value for directive %s must be %s", RequireTrustedTypesFor, allowedValue)
@@ -102,14 +98,12 @@ func buildDirectiveRequireTrustedTypesFor(
 	return nil
 }
 
-func buildDirectiveTrustedTypes(
-	sb *strings.Builder,
-	values []string,
-) error {
+func buildDirectiveTrustedTypes(sb *strings.Builder, values []string) error {
 	sb.WriteString(TrustedTypes)
 
 	for _, val := range values {
 		sb.WriteString(" ")
+
 		switch val {
 		case "'none'":
 			if len(values) != 1 {
@@ -120,43 +114,40 @@ func buildDirectiveTrustedTypes(
 		case "*":
 			// nothing to do
 		default:
-			// value is policyname
+			// value is policy name
 			regex := regexp.MustCompile(`^[A-Za-z0-9\-#=_/@\.%]*$`)
 			if !regex.MatchString(val) {
 				return fmt.Errorf("unallowed value %s for directive %s", val, TrustedTypes)
 			}
 		}
+
 		sb.WriteString(val)
 	}
 
 	return nil
 }
 
-func buildDirectiveUpgradeInsecureRequests(
-	sb *strings.Builder,
-	values []string,
-) error {
+func buildDirectiveUpgradeInsecureRequests(sb *strings.Builder, values []string) error {
 	if len(values) != 0 {
 		return fmt.Errorf("directive %s must not contain values", UpgradeInsecureRequests)
 	}
 
 	sb.WriteString(UpgradeInsecureRequests)
+
 	return nil
 }
 
-func buildDirectiveDefault(
-	sb *strings.Builder,
-	directive string,
-	values []string,
-) error {
+func buildDirectiveDefault(sb *strings.Builder, directive string, values []string) error {
 	if len(values) == 0 {
 		return fmt.Errorf("no values set for directive %s", directive)
 	}
 
 	sb.WriteString(directive)
+
 	for i := range values {
 		sb.WriteString(" ")
 		sb.WriteString(values[i])
 	}
+
 	return nil
 }

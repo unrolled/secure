@@ -1,6 +1,7 @@
 package secure
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -22,15 +23,14 @@ func TestCSPNonce(t *testing.T) {
 	}{
 		{Options{ContentSecurityPolicy: csp}, []string{"Content-Security-Policy"}},
 		{Options{ContentSecurityPolicyReportOnly: csp}, []string{"Content-Security-Policy-Report-Only"}},
-		{Options{ContentSecurityPolicy: csp, ContentSecurityPolicyReportOnly: csp},
-			[]string{"Content-Security-Policy", "Content-Security-Policy-Report-Only"}},
+		{Options{ContentSecurityPolicy: csp, ContentSecurityPolicyReportOnly: csp}, []string{"Content-Security-Policy", "Content-Security-Policy-Report-Only"}},
 	}
 
 	for _, c := range cases {
 		s := New(c.options)
 
 		res := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/foo", nil)
+		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 
 		s.Handler(cspHandler).ServeHTTP(res, req)
 
@@ -54,7 +54,7 @@ func TestCSPNonce(t *testing.T) {
 }
 
 func TestWithCSPNonce(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/foo", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 
 	nonce := "jdgKGHkbnd+/"
 

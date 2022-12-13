@@ -35,6 +35,7 @@ func withCSPNonce(r *http.Request, nonce string) *http.Request {
 
 func cspRandNonce() string {
 	var buf [cspNonceSize]byte
+
 	_, err := io.ReadFull(rand.Reader, buf[:])
 	if err != nil {
 		panic("CSP Nonce rand.Reader failed" + err.Error())

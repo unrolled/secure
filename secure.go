@@ -50,7 +50,7 @@ func defaultBadRequestHandler(w http.ResponseWriter, r *http.Request) {
 // Options is a struct for specifying configuration options for the secure.Secure middleware.
 type Options struct {
 	// If BrowserXssFilter is true, adds the X-XSS-Protection header with the value `1; mode=block`. Default is false.
-	BrowserXssFilter bool //nolint:stylecheck
+	BrowserXssFilter bool //nolint:stylecheck,revive
 	// If ContentTypeNosniff is true, adds the X-Content-Type-Options header with the value `nosniff`. Default is false.
 	ContentTypeNosniff bool
 	// If ForceSTSHeader is set to true, the STS header will be added even when the connection is HTTP. Default is false.
@@ -77,7 +77,7 @@ type Options struct {
 	// ContentSecurityPolicyReportOnly allows the Content-Security-Policy-Report-Only header value to be set with a custom value. Default is "".
 	ContentSecurityPolicyReportOnly string
 	// CustomBrowserXssValue allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is "".
-	CustomBrowserXssValue string //nolint:stylecheck
+	CustomBrowserXssValue string //nolint:stylecheck,revive
 	// Passing a template string will replace `$NONCE` with a dynamic nonce value of 16 bytes for each request which can be later retrieved using the Nonce function.
 	// Eg: script-src $NONCE -> script-src 'nonce-a2ZobGFoZg=='
 	// CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option. Default is "".
@@ -165,6 +165,7 @@ func New(options ...Options) *Secure {
 			if err != nil {
 				panic(fmt.Sprintf("Error parsing AllowedHost: %s", err))
 			}
+
 			s.cRegexAllowedHosts = append(s.cRegexAllowedHosts, regex)
 		}
 	}
@@ -211,8 +212,6 @@ func (s *Secure) HandlerForRequestOnly(h http.Handler) http.Handler {
 		// Let secure process the request. If it returns an error,
 		// that indicates the request should not continue.
 		responseHeader, r, err := s.processRequest(w, r)
-
-		// If there was an error, do not continue.
 		if err != nil {
 			return
 		}
@@ -299,6 +298,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 	// Resolve the host for the request, using proxy headers if present.
 	host := r.Host
+
 	for _, header := range s.opt.HostsProxyHeaders {
 		if h := r.Header.Get(header); h != "" {
 			host = h
@@ -309,6 +309,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// Allowed hosts check.
 	if len(s.opt.AllowedHosts) > 0 && !s.opt.IsDevelopment {
 		isGoodHost := false
+
 		if s.opt.AllowedHostsAreRegex {
 			for _, allowedHost := range s.cRegexAllowedHosts {
 				if match := allowedHost.MatchString(host); match {
@@ -324,6 +325,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 				}
 			}
 		}
+
 		if !isGoodHost {
 			s.badHostHandler.ServeHTTP(w, r)
 			return nil, nil, fmt.Errorf("bad host name: %s", host)
@@ -353,22 +355,25 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 		}
 
 		http.Redirect(w, r, url.String(), status)
+
 		return nil, nil, fmt.Errorf("redirecting to HTTPS")
 	}
 
 	if s.opt.SSLForceHost {
-		var SSLHost = host
+		tempSSLHost := host
+
 		if s.opt.SSLHostFunc != nil {
 			if h := (*s.opt.SSLHostFunc)(host); len(h) > 0 {
-				SSLHost = h
+				tempSSLHost = h
 			}
 		} else if len(s.opt.SSLHost) > 0 {
-			SSLHost = s.opt.SSLHost
+			tempSSLHost = s.opt.SSLHost
 		}
-		if SSLHost != host {
+
+		if tempSSLHost != host {
 			url := r.URL
 			url.Scheme = "https"
-			url.Host = SSLHost
+			url.Host = tempSSLHost
 
 			status := http.StatusMovedPermanently
 			if s.opt.SSLTemporaryRedirect {
@@ -376,6 +381,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 			}
 
 			http.Redirect(w, r, url.String(), status)
+
 			return nil, nil, fmt.Errorf("redirecting to HTTPS")
 		}
 	}
@@ -485,6 +491,7 @@ func (s *Secure) isSSL(r *http.Request) bool {
 			}
 		}
 	}
+
 	return ssl
 }
 
@@ -507,12 +514,14 @@ func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
 
 		responseHeader := res.Request.Context().Value(s.ctxSecureHeaderKey)
 		if responseHeader != nil {
-			for header, values := range responseHeader.(http.Header) {
+			headers, _ := responseHeader.(http.Header)
+			for header, values := range headers {
 				if len(values) > 0 {
 					res.Header.Set(header, strings.Join(values, ","))
 				}
 			}
 		}
 	}
+
 	return nil
 }
