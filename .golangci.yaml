@@ -2,4 +2,37 @@ run:
   timeout: 10m
 
 linters:
-  disable-all: false
+  enable-all: true
+  disable:
+    # Deprecated linters
+    - varcheck
+    - exhaustivestruct
+    - ifshort
+    - structcheck
+    - golint
+    - maligned
+    - interfacer
+    - nosnakecase
+    - deadcode
+    - scopelint
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - wastedassign
+    # Ignoring
+    - lll
+    - varnamelen
+    - paralleltest
+    - testpackage
+    - goerr113
+    - exhaustruct
+    - nestif
+    - funlen
+    - goconst
+    - nlreturn
+    - gochecknoglobals
+    - cyclop
+    - gocyclo
+    - gocognit
+    - maintidx
+    - contextcheck
