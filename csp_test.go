@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-// cspHandler writes the nonce out as the response body.
+//nolint:gochecknoglobals
 var cspHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(CSPNonce(r.Context())))
 })

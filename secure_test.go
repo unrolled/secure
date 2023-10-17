@@ -10,6 +10,7 @@ import (
 	"testing"
 )
 
+//nolint:gochecknoglobals
 var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("bar"))
 })
