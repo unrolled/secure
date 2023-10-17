@@ -45,6 +45,7 @@ func TestContentSecurityPolicyBuilder_Build_SingleDirective(t *testing.T) {
 			got, err := builder.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ContentSecurityPolicyBuilder.Build() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 
@@ -94,6 +95,7 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 			got, err := builder.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ContentSecurityPolicyBuilder.Build() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 
@@ -102,6 +104,7 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 				for directive := range tt.directives {
 					if strings.HasPrefix(got, directive) {
 						startsWithDirective = true
+
 						break
 					}
 				}

@@ -9,6 +9,7 @@ import (
 func buildDirectiveSandbox(sb *strings.Builder, values []string) error {
 	if len(values) == 0 {
 		sb.WriteString(Sandbox)
+
 		return nil
 	}
 

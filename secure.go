@@ -39,11 +39,11 @@ type SSLHostFunc func(host string) (newHost string)
 // AllowRequestFunc is a custom function type that can be used to dynamically determine if a request should proceed or not.
 type AllowRequestFunc func(r *http.Request) bool
 
-func defaultBadHostHandler(w http.ResponseWriter, r *http.Request) {
+func defaultBadHostHandler(w http.ResponseWriter, _ *http.Request) {
 	http.Error(w, "Bad Host", http.StatusInternalServerError)
 }
 
-func defaultBadRequestHandler(w http.ResponseWriter, r *http.Request) {
+func defaultBadRequestHandler(w http.ResponseWriter, _ *http.Request) {
 	http.Error(w, "Bad Request", http.StatusBadRequest)
 }
 
@@ -302,6 +302,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	for _, header := range s.opt.HostsProxyHeaders {
 		if h := r.Header.Get(header); h != "" {
 			host = h
+
 			break
 		}
 	}
@@ -314,6 +315,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 			for _, allowedHost := range s.cRegexAllowedHosts {
 				if match := allowedHost.MatchString(host); match {
 					isGoodHost = true
+
 					break
 				}
 			}
@@ -321,6 +323,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 			for _, allowedHost := range s.opt.AllowedHosts {
 				if strings.EqualFold(allowedHost, host) {
 					isGoodHost = true
+
 					break
 				}
 			}
@@ -328,6 +331,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 		if !isGoodHost {
 			s.badHostHandler.ServeHTTP(w, r)
+
 			return nil, nil, fmt.Errorf("bad host name: %s", host)
 		}
 	}
@@ -389,6 +393,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// If the AllowRequestFunc is set, call it and exit early if needed.
 	if s.opt.AllowRequestFunc != nil && !s.opt.AllowRequestFunc(r) {
 		s.badRequestHandler.ServeHTTP(w, r)
+
 		return nil, nil, fmt.Errorf("request not allowed")
 	}
 
@@ -487,6 +492,7 @@ func (s *Secure) isSSL(r *http.Request) bool {
 		for k, v := range s.opt.SSLProxyHeaders {
 			if r.Header.Get(k) == v {
 				ssl = true
+
 				break
 			}
 		}
