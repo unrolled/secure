@@ -26,7 +26,6 @@ const (
 	referrerPolicyHeader    = "Referrer-Policy"
 	featurePolicyHeader     = "Feature-Policy"
 	permissionsPolicyHeader = "Permissions-Policy"
-	expectCTHeader          = "Expect-CT"
 	coopHeader              = "Cross-Origin-Opener-Policy"
 
 	ctxDefaultSecureHeaderKey = secureCtxKey("SecureResponseHeader")
@@ -82,9 +81,6 @@ type Options struct {
 	// Eg: script-src $NONCE -> script-src 'nonce-a2ZobGFoZg=='
 	// CustomFrameOptionsValue allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option. Default is "".
 	CustomFrameOptionsValue string
-	// PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
-	// Deprecated: This feature is no longer recommended. Though some browsers might still support it, it may have already been removed from the relevant web standards, may be in the process of being dropped, or may only be kept for compatibility purposes. Avoid using it, and update existing code if possible.
-	PublicKey string
 	// ReferrerPolicy allows sites to control when browsers will pass the Referer header to other sites. Default is "".
 	ReferrerPolicy string
 	// FeaturePolicy allows to selectively enable and disable use of various browser features and APIs. Default is "".
@@ -112,8 +108,6 @@ type Options struct {
 	SSLProxyHeaders map[string]string
 	// STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
 	STSSeconds int64
-	// ExpectCTHeader allows the Expect-CT header value to be set with a custom value. Default is "".
-	ExpectCTHeader string
 	// SecureContextKey allows a custom key to be specified for context storage.
 	SecureContextKey string
 }
@@ -434,11 +428,6 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 		responseHeader.Set(xssProtectionHeader, xssProtectionValue)
 	}
 
-	// HPKP header.
-	if len(s.opt.PublicKey) > 0 && ssl && !s.opt.IsDevelopment {
-		responseHeader.Set(hpkpHeader, s.opt.PublicKey)
-	}
-
 	// Content Security Policy header.
 	if len(s.opt.ContentSecurityPolicy) > 0 {
 		if s.opt.nonceEnabled {
@@ -475,11 +464,6 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// Cross Origin Opener Policy header.
 	if len(s.opt.CrossOriginOpenerPolicy) > 0 {
 		responseHeader.Set(coopHeader, s.opt.CrossOriginOpenerPolicy)
-	}
-
-	// Expect-CT header.
-	if len(s.opt.ExpectCTHeader) > 0 {
-		responseHeader.Set(expectCTHeader, s.opt.ExpectCTHeader)
 	}
 
 	return responseHeader, r, nil
