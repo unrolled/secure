@@ -1,6 +1,7 @@
 package cspbuilder
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -61,8 +62,12 @@ func (builder *Builder) MustBuild() string {
 // If any directive contains invalid values, an error is returned instead.
 func (builder *Builder) Build() (string, error) {
 	var sb strings.Builder
-
-	for directive := range builder.Directives {
+	var keys []string
+	for k := range builder.Directives {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, directive := range keys {
 		if sb.Len() > 0 {
 			sb.WriteString("; ")
 		}

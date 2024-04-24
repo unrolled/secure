@@ -62,6 +62,7 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 		directives map[string]([]string)
 		builder    Builder
 		wantParts  []string
+		wantFull   string
 		wantErr    bool
 	}{
 		{
@@ -85,6 +86,8 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 				"trusted-types policy-1 policy-#=_/@.% 'allow-duplicates'",
 				"upgrade-insecure-requests",
 			},
+
+			wantFull: "default-src 'self' example.com *.example.com; frame-ancestors 'self' http://*.example.com; report-to group1; require-trusted-types-for 'script'; sandbox allow-scripts; trusted-types policy-1 policy-#=_/@.% 'allow-duplicates'; upgrade-insecure-requests",
 		},
 	}
 	for _, tt := range tests {
@@ -97,6 +100,10 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 				t.Errorf("ContentSecurityPolicyBuilder.Build() error = %v, wantErr %v", err, tt.wantErr)
 
 				return
+			}
+
+			if got != tt.wantFull {
+				t.Errorf("ContentSecurityPolicyBuilder.Build() = %v, but wanted %v", got, tt.wantFull)
 			}
 
 			{
