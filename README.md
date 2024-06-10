@@ -20,19 +20,21 @@ var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     secureMiddleware := secure.New(secure.Options{
-        AllowedHosts:          []string{"example\\.com", ".*\\.example\\.com"},
-        AllowedHostsAreRegex:  true,
-        HostsProxyHeaders:     []string{"X-Forwarded-Host"},
-        SSLRedirect:           true,
-        SSLHost:               "ssl.example.com",
-        SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
-        STSSeconds:            31536000,
-        STSIncludeSubdomains:  true,
-        STSPreload:            true,
-        FrameDeny:             true,
-        ContentTypeNosniff:    true,
-        BrowserXssFilter:      true,
-        ContentSecurityPolicy: "script-src $NONCE",
+        AllowedHosts:                 []string{"example\\.com", ".*\\.example\\.com"},
+        AllowedHostsAreRegex:         true,
+        HostsProxyHeaders:            []string{"X-Forwarded-Host"},
+        SSLRedirect:                  true,
+        SSLHost:                      "ssl.example.com",
+        SSLProxyHeaders:              map[string]string{"X-Forwarded-Proto": "https"},
+        STSSeconds:                   31536000,
+        STSIncludeSubdomains:         true,
+        STSPreload:                   true,
+        FrameDeny:                    true,
+        ContentTypeNosniff:           true,
+        BrowserXssFilter:             true,
+        ContentSecurityPolicy:        "script-src $NONCE",
+       	PermittedCrossDomainPolicies: "none",
+    	RobotTag:                     "noindex",
     })
 
     app := secureMiddleware.Handler(myHandler)
@@ -42,7 +44,7 @@ func main() {
 
 Be sure to include the Secure middleware as close to the top (beginning) as possible (but after logging and recovery). It's best to do the allowed hosts and SSL check before anything else.
 
-The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
+The above example will only allow requests with a host name of 'example.com', or 'ssl.example.com'. Also, if the request is not HTTPS, it will be redirected to HTTPS with the host name of 'ssl.example.com'.
 Once those requirements are satisfied, it will add the following headers:
 ~~~ go
 Strict-Transport-Security: 31536000; includeSubdomains; preload
@@ -53,7 +55,7 @@ Content-Security-Policy: script-src 'nonce-a2ZobGFoZg=='
 ~~~
 
 ### Set the `IsDevelopment` option to `true` when developing!
-When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, and STS header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (ie. development can happen on HTTP), or block `localhost` has a bad host.
+When `IsDevelopment` is true, the AllowedHosts, SSLRedirect, and STS header will not be in effect. This allows you to work in development/test mode and not have any annoying redirects to HTTPS (i.e. development can happen on HTTP), or block `localhost` has a bad host.
 
 ### Available options
 Secure comes with a variety of configuration options (Note: these are not the default option values. See the defaults below.):
@@ -144,7 +146,7 @@ http.Error(w, "Bad Request", http.StatusBadRequest)
 Call `secure.SetBadRequestHandler` to set your own custom handler.
 
 ### Allow Request Function
-Secure allows you to set a custom function (`func(r *http.Request) bool`) for the `AllowRequestFunc` option. You can use this function as a custom filter to allow the request to continue or simply reject it. This can be handy if you need to do any dynamic filtering on any of the request properties. It should be noted that this function will be called on every request, so be sure to make your checks quick and not relying on time consuming external calls (or you will be slowing down all requests). See above on how to set a custom handler for the rejected requests.
+Secure allows you to set a custom function (`func(r *http.Request) bool`) for the `AllowRequestFunc` option. You can use this function as a custom filter to allow the request to continue or simply reject it. This can be handy if you need to do any dynamic filtering on any of the request properties. It should be noted that this function will be called on every request, so be sure to make your checks quick and not relying on time-consuming external calls (or you will be slowing down all requests). See above on how to set a custom handler for the rejected requests.
 
 ### Redirecting HTTP to HTTPS
 If you want to redirect all HTTP requests to HTTPS, you can use the following example.

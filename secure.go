@@ -32,6 +32,9 @@ const (
 	corpHeader                   = "Cross-Origin-Resource-Policy"
 	dnsPreFetchControlHeader     = "X-DNS-Prefetch-Control"
 	permittedCrossDomainPolicies = "X-Permitted-Cross-Domain-Policies"
+	robotTagHeader                     = "X-Robots-Tag"
+	permittedCrossDomainPoliciesHeader = "X-Permitted-Cross-Domain-Policies"
+
 	ctxDefaultSecureHeaderKey    = secureCtxKey("SecureResponseHeader")
 	cspNonceSize                 = 16
 )
@@ -126,9 +129,15 @@ type Options struct {
 	STSSeconds int64
 	// SecureContextKey allows a custom key to be specified for context storage.
 	SecureContextKey string
+	// PermittedCrossDomainPolicies allows to set the X-Permitted-Cross-Domain-Policies header
+	// Reference https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
+	PermittedCrossDomainPolicies string
+	// RobotTag allows to set the X-Robot-Tag header
+	// Reference https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag
+	RobotTag string
 }
 
-// Secure is a middleware that helps setup a few basic security features. A single secure.Options struct can be
+// Secure is a middleware that helps set up a few basic security features. A single secure.Options struct can be
 // provided to configure which features should be enabled, and the ability to override a few of the default values.
 type Secure struct {
 	// Customize Secure with an Options struct.
@@ -503,6 +512,16 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// X-Permitted-Cross-Domain-Policies header.
 	if len(s.opt.XPermittedCrossDomainPolicies) > 0 {
 		responseHeader.Set(permittedCrossDomainPolicies, s.opt.XPermittedCrossDomainPolicies)
+	}
+
+	// X-Permitted-Cross-Domain-Policies
+	if len(s.opt.PermittedCrossDomainPolicies) > 0 {
+		responseHeader.Set(permittedCrossDomainPoliciesHeader, s.opt.PermittedCrossDomainPolicies)
+	}
+
+	// X-Robots-Tag
+	if len(s.opt.RobotTag) > 0 {
+		responseHeader.Set(robotTagHeader, s.opt.RobotTag)
 	}
 
 	return responseHeader, r, nil

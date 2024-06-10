@@ -704,6 +704,36 @@ func TestStsHeaderWithSubdomainsWithPreloadForRequestOnly(t *testing.T) {
 	expect(t, res.Header().Get("Strict-Transport-Security"), "")
 }
 
+func TestXRobotTag(t *testing.T) {
+	s := New(Options{
+		RobotTag: "foo",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-Robots-Tag"), "foo")
+}
+
+func TestPermittedCrossDomainPolicies(t *testing.T) {
+	s := New(Options{
+		PermittedCrossDomainPolicies: "foo",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
+	req.Host = "www.example.com"
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-Permitted-Cross-Domain-Policies"), "foo")
+}
+
 func TestFrameDeny(t *testing.T) {
 	s := New(Options{
 		FrameDeny: true,
