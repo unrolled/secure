@@ -2,6 +2,7 @@ package secure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -369,7 +370,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 		http.Redirect(w, r, url.String(), status)
 
-		return nil, nil, fmt.Errorf("redirecting to HTTPS")
+		return nil, nil, errors.New("redirecting to HTTPS")
 	}
 
 	if s.opt.SSLForceHost {
@@ -395,7 +396,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 			http.Redirect(w, r, url.String(), status)
 
-			return nil, nil, fmt.Errorf("redirecting to HTTPS")
+			return nil, nil, errors.New("redirecting to HTTPS")
 		}
 	}
 
@@ -403,7 +404,7 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	if s.opt.AllowRequestFunc != nil && !s.opt.AllowRequestFunc(r) {
 		s.badRequestHandler.ServeHTTP(w, r)
 
-		return nil, nil, fmt.Errorf("request not allowed")
+		return nil, nil, errors.New("request not allowed")
 	}
 
 	// Create our header container.
@@ -535,7 +536,7 @@ func (s *Secure) ModifyResponseHeaders(res *http.Response) error {
 		location := res.Header.Get("Location")
 		if s.isSSL(res.Request) &&
 			len(s.opt.SSLHost) > 0 &&
-			(strings.HasPrefix(location, fmt.Sprintf("http://%s/", s.opt.SSLHost)) || location == fmt.Sprintf("http://%s", s.opt.SSLHost)) {
+			(strings.HasPrefix(location, fmt.Sprintf("http://%s/", s.opt.SSLHost)) || location == "http://"+s.opt.SSLHost) {
 			location = strings.Replace(location, "http:", "https:", 1)
 			res.Header.Set("Location", location)
 		}
