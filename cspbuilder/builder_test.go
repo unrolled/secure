@@ -42,6 +42,7 @@ func TestContentSecurityPolicyBuilder_Build_SingleDirective(t *testing.T) {
 					tt.directiveName: tt.directiveValues,
 				},
 			}
+
 			got, err := builder.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ContentSecurityPolicyBuilder.Build() error = %v, wantErr %v", err, tt.wantErr)
@@ -92,6 +93,7 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 			builder := &Builder{
 				Directives: tt.directives,
 			}
+
 			got, err := builder.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ContentSecurityPolicyBuilder.Build() error = %v, wantErr %v", err, tt.wantErr)
@@ -101,6 +103,7 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 
 			{
 				startsWithDirective := false
+
 				for directive := range tt.directives {
 					if strings.HasPrefix(got, directive) {
 						startsWithDirective = true
@@ -108,6 +111,7 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 						break
 					}
 				}
+
 				if !startsWithDirective {
 					t.Errorf("ContentSecurityPolicyBuilder.Build() = '%v', does not start with directive name", got)
 				}
@@ -116,6 +120,7 @@ func TestContentSecurityPolicyBuilder_Build_MultipleDirectives(t *testing.T) {
 			if strings.HasSuffix(got, " ") {
 				t.Errorf("ContentSecurityPolicyBuilder.Build() = '%v', ends on whitespace", got)
 			}
+
 			if strings.HasSuffix(got, ";") {
 				t.Errorf("ContentSecurityPolicyBuilder.Build() = '%v', ends on semi-colon", got)
 			}

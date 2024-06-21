@@ -10,8 +10,14 @@ import (
 	"testing"
 )
 
+const (
+	httpSchema  = "http"
+	httpsSchema = "https"
+	exampleHost = "www.example.com"
+)
+
 //nolint:gochecknoglobals
-var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+var myHandler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("bar"))
 })
 
@@ -34,7 +40,7 @@ func TestNoAllowHosts(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
+	req.Host = exampleHost
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -49,7 +55,7 @@ func TestGoodSingleAllowHosts(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
+	req.Host = exampleHost
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -64,7 +70,7 @@ func TestBadSingleAllowHosts(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
+	req.Host = exampleHost
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -79,7 +85,7 @@ func TestRegexSingleAllowHosts(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "sub.example.com"
+	req.Host = exampleHost
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -140,7 +146,7 @@ func TestGoodSingleAllowHostsProxyHeaders(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "example-internal"
+	req.Host = "example-internal-3"
 	req.Header.Set("X-Proxy-Host", "www.example.com")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -172,7 +178,7 @@ func TestGoodMultipleAllowHosts(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "sub.example.com"
+	req.Host = exampleHost
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -202,7 +208,7 @@ func TestAllowHostsInDevMode(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www3.example.com"
+	req.Host = exampleHost
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -214,7 +220,7 @@ func TestBadHostHandler(t *testing.T) {
 		AllowedHosts: []string{"www.example.com", "sub.example.com"},
 	})
 
-	badHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	badHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "BadHost", http.StatusInternalServerError)
 	})
 
@@ -239,8 +245,8 @@ func TestSSL(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "https"
+	req.Host = exampleHost
+	req.URL.Scheme = httpsSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -255,8 +261,8 @@ func TestSSLInDevMode(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -270,8 +276,8 @@ func TestBasicSSL(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -287,8 +293,8 @@ func TestBasicSSLWithHost(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -300,7 +306,7 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 	sslHostFunc := (func() SSLHostFunc {
 		return func(host string) string {
 			newHost := ""
-			if host == "www.example.com" {
+			if host == exampleHost {
 				newHost = "secure.example.com:8443"
 			} else if host == "www.example.org" {
 				newHost = "secure.example.org"
@@ -317,8 +323,8 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 	// test www.example.com
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -329,7 +335,7 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 	res = httptest.NewRecorder()
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 	req.Host = "www.example.org"
-	req.URL.Scheme = "http"
+	req.URL.Scheme = httpSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -340,7 +346,7 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 	res = httptest.NewRecorder()
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 	req.Host = "www.other.com"
-	req.URL.Scheme = "http"
+	req.URL.Scheme = httpSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -355,8 +361,8 @@ func TestBadProxySSL(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -373,8 +379,8 @@ func TestCustomProxySSL(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -391,8 +397,8 @@ func TestCustomProxySSLInDevMode(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "http")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -410,7 +416,7 @@ func TestCustomProxyAndHostProxyHeadersWithRedirect(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 	req.Host = "example-internal"
-	req.URL.Scheme = "http"
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 	req.Header.Add("X-Forwarded-Host", "www.example.com")
 
@@ -429,8 +435,8 @@ func TestCustomProxyAndHostSSL(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -447,8 +453,8 @@ func TestCustomBadProxyAndHostSSL(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -467,8 +473,8 @@ func TestCustomBadProxyAndHostSSLWithTempRedirect(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -545,7 +551,7 @@ func TestStsHeaderWithSSL(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "http"
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -562,7 +568,7 @@ func TestStsHeaderWithSSLForRequestOnly(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "http"
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
@@ -579,7 +585,7 @@ func TestStsHeaderInDevMode(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -595,7 +601,7 @@ func TestStsHeaderWithSubdomains(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -611,7 +617,7 @@ func TestStsHeaderWithSubdomainsForRequestOnly(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 
 	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
 
@@ -627,7 +633,7 @@ func TestStsHeaderWithPreload(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -643,7 +649,7 @@ func TestStsHeaderWithPreloadForRequest(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 
 	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
 
@@ -660,7 +666,7 @@ func TestStsHeaderWithSubdomainsWithPreload(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -677,7 +683,7 @@ func TestStsHeaderWithSubdomainsWithPreloadForRequestOnly(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 
 	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
 
@@ -1054,7 +1060,7 @@ func TestIsSSL(t *testing.T) {
 	expect(t, s.isSSL(req), true)
 
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = "https"
+	req.URL.Scheme = httpsSchema
 	expect(t, s.isSSL(req), true)
 
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
@@ -1071,8 +1077,8 @@ func TestSSLForceHostWithHTTPS(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "https"
+	req.Host = exampleHost
+	req.URL.Scheme = httpsSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -1088,8 +1094,8 @@ func TestSSLForceHostWithHTTP(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "http")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -1107,8 +1113,8 @@ func TestSSLForceHostWithSSLRedirect(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "https"
+	req.Host = exampleHost
+	req.URL.Scheme = httpsSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -1126,8 +1132,8 @@ func TestSSLForceHostTemporaryRedirect(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "https"
+	req.Host = exampleHost
+	req.URL.Scheme = httpsSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	s.Handler(myHandler).ServeHTTP(res, req)
@@ -1157,8 +1163,8 @@ func TestModifyResponseHeadersWithSSLAndDifferentSSLHost(t *testing.T) {
 	})
 
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	res := &http.Response{}
@@ -1180,8 +1186,8 @@ func TestModifyResponseHeadersWithSSLAndNoSSLHost(t *testing.T) {
 	})
 
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	res := &http.Response{}
@@ -1204,8 +1210,8 @@ func TestModifyResponseHeadersWithSSLAndMatchingSSLHost(t *testing.T) {
 	})
 
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	res := &http.Response{}
@@ -1228,8 +1234,8 @@ func TestModifyResponseHeadersWithSSLAndPortInLocationResponse(t *testing.T) {
 	})
 
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	res := &http.Response{}
@@ -1252,8 +1258,8 @@ func TestModifyResponseHeadersWithSSLAndPathInLocationResponse(t *testing.T) {
 	})
 
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.Host = "www.example.com"
-	req.URL.Scheme = "http"
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
 	req.Header.Add("X-Forwarded-Proto", "https")
 
 	res := &http.Response{}
@@ -1280,7 +1286,7 @@ func TestCustomSecureContextKey(t *testing.T) {
 
 	var actual *http.Request
 
-	hf := func(w http.ResponseWriter, r *http.Request) {
+	hf := func(_ http.ResponseWriter, r *http.Request) {
 		actual = r
 	}
 
@@ -1306,7 +1312,7 @@ func TestMultipleCustomSecureContextKeys(t *testing.T) {
 
 	var actual *http.Request
 
-	hf := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	hf := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		actual = r
 	})
 
@@ -1322,7 +1328,7 @@ func TestMultipleCustomSecureContextKeys(t *testing.T) {
 
 func TestAllowRequestFuncTrue(t *testing.T) {
 	s := New(Options{
-		AllowRequestFunc: func(r *http.Request) bool { return true },
+		AllowRequestFunc: func(_ *http.Request) bool { return true },
 	})
 
 	res := httptest.NewRecorder()
@@ -1337,7 +1343,7 @@ func TestAllowRequestFuncTrue(t *testing.T) {
 
 func TestAllowRequestFuncFalse(t *testing.T) {
 	s := New(Options{
-		AllowRequestFunc: func(r *http.Request) bool { return false },
+		AllowRequestFunc: func(_ *http.Request) bool { return false },
 	})
 
 	res := httptest.NewRecorder()
@@ -1351,9 +1357,9 @@ func TestAllowRequestFuncFalse(t *testing.T) {
 
 func TestBadRequestHandler(t *testing.T) {
 	s := New(Options{
-		AllowRequestFunc: func(r *http.Request) bool { return false },
+		AllowRequestFunc: func(_ *http.Request) bool { return false },
 	})
-	badRequestFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	badRequestFunc := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "custom error", http.StatusConflict)
 	})
 	s.SetBadRequestHandler(badRequestFunc)
