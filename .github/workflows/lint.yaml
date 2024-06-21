@@ -1,0 +1,19 @@
+on:
+  push:
+    branches:
+      - master
+      - v1
+  pull_request:
+    branches:
+      - "**"
+name: Linter
+jobs:
+  golangci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src/github.com/unrolled/secure
+      - uses: golangci/golangci-lint-action@v4
+        with:
+          working-directory: src/github.com/unrolled/secure

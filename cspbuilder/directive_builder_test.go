@@ -79,6 +79,7 @@ func TestBuildDirectiveFrameAncestors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := &strings.Builder{}
+
 			err := buildDirectiveFrameAncestors(sb, tt.values)
 			if tt.wantErr && err != nil {
 				return
@@ -222,6 +223,7 @@ func TestBuildDirectiveTrustedTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := &strings.Builder{}
+
 			err := buildDirectiveTrustedTypes(sb, tt.values)
 			if tt.wantErr && err != nil {
 				return
