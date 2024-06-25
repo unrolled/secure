@@ -28,4 +28,4 @@ jobs:
           path: src/github.com/unrolled/secure
       - uses: golangci/golangci-lint-action@v4
         with:
-          working-directory: src/github.com/7shifts/seven-deploy
+          working-directory: src/github.com/unrolled/secure
