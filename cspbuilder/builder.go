@@ -1,6 +1,7 @@
 package cspbuilder
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -62,7 +63,16 @@ func (builder *Builder) MustBuild() string {
 func (builder *Builder) Build() (string, error) {
 	var sb strings.Builder
 
-	for directive := range builder.Directives {
+	// Pull the directive keys out.
+	directiveKeys := []string{}
+	for key := range builder.Directives {
+		directiveKeys = append(directiveKeys, key)
+	}
+
+	// Sort the policies: https://www.w3.org/TR/CSP3/#framework-policy
+	sort.Strings(directiveKeys)
+
+	for _, directive := range directiveKeys {
 		if sb.Len() > 0 {
 			sb.WriteString("; ")
 		}
