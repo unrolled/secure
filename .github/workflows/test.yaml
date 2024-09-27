@@ -11,7 +11,7 @@ jobs:
   tests:
     strategy:
       matrix:
-        go-version: [1.18.x, 1.19.x, 1.20.x, 1.21.x, 1.22.x]
+        go-version: [1.18.x, 1.19.x, 1.20.x, 1.21.x, 1.22.x, 1.23.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -20,12 +20,3 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - run: make ci
-  golangci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: src/github.com/unrolled/secure
-      - uses: golangci/golangci-lint-action@v4
-        with:
-          working-directory: src/github.com/unrolled/secure
