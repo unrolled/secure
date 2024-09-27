@@ -1376,35 +1376,15 @@ func TestBadRequestHandler(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
-	// func cant be marshalled
-	var t1 = struct {
-		A string
-		F func()
-	}{}
-	_, err := json.Marshal(t1) //lint:ignore SA1026 ignore marshal error
-	if err == nil {
-		t.Error("expected error got none")
-	} else if !strings.Contains(err.Error(), "unsupported type: func()") {
-		t.Error("unexpected error:", err)
-	}
-
-	// struct field tags omits func
-	var t2 = struct {
-		A string
-		F func() `json:"-"`
-	}{}
-	_, err = json.Marshal(t2)
-	if err != nil {
-		t.Error("unexpected error:", err)
-	}
-
 	// Options has struct field tags to omit func fields
 	var o1 Options
-	b, err := json.Marshal(o1)
+
+	b, err := json.Marshal(o1) //nolint:musttag
 	if err != nil {
 		t.Errorf("unexpected error marshal: %v", err)
 	}
-	err = json.Unmarshal(b, &o1)
+
+	err = json.Unmarshal(b, &o1) //nolint:musttag
 	if err != nil {
 		t.Errorf("unexpected error unmarshal: %v", err)
 	}

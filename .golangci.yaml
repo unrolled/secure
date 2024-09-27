@@ -29,3 +29,4 @@ linters:
     - maintidx
     - contextcheck
     - perfsprint
+    - exportloopref
