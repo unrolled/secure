@@ -98,12 +98,12 @@ type Options struct {
 	// AllowedHostsAreRegex determines, if the provided `AllowedHosts` slice contains valid regular expressions. If this flag is set to true, every request's host will be checked against these expressions. Default is false.
 	AllowedHostsAreRegex bool
 	// AllowRequestFunc is a custom function that allows you to determine if the request should proceed or not based on your own custom logic. Default is nil.
-	AllowRequestFunc AllowRequestFunc
+	AllowRequestFunc AllowRequestFunc `json:"-" yaml:"-" toml:"-"`
 	// HostsProxyHeaders is a set of header keys that may hold a proxied hostname value for the request.
 	HostsProxyHeaders []string
 	// SSLHostFunc is a function pointer, the return value of the function is the host name that has same functionality as `SSHost`. Default is nil.
 	// If SSLHostFunc is nil, the `SSLHost` option will be used.
-	SSLHostFunc *SSLHostFunc
+	SSLHostFunc *SSLHostFunc `json:"-" yaml:"-" toml:"-"`
 	// SSLProxyHeaders is set of header keys with associated values that would indicate a valid https request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
 	SSLProxyHeaders map[string]string
 	// STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
