@@ -65,7 +65,7 @@ type Options struct {
 	SSLRedirect bool
 	// If SSLForceHost is true and SSLHost is set, requests will be forced to use SSLHost even the ones that are already using SSL. Default is false.
 	SSLForceHost bool
-	// If SSLTemporaryRedirect is true, the a 302 will be used while redirecting. Default is false (301).
+	// If SSLTemporaryRedirect is true, then a 307 will be used while redirecting. Default is false (301).
 	SSLTemporaryRedirect bool
 	// If STSIncludeSubdomains is set to true, the `includeSubdomains` will be appended to the Strict-Transport-Security header. Default is false.
 	STSIncludeSubdomains bool
