@@ -1046,6 +1046,74 @@ func TestCrossOriginOpenerPolicy(t *testing.T) {
 	expect(t, res.Header().Get("Cross-Origin-Opener-Policy"), "same-origin")
 }
 
+func TestCrossOriginEmbedderPolicy(t *testing.T) {
+	s := New(Options{
+		CrossOriginEmbedderPolicy: "require-corp",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Cross-Origin-Embedder-Policy"), "require-corp")
+}
+
+func TestCrossOriginResourcePolicy(t *testing.T) {
+	s := New(Options{
+		CrossOriginResourcePolicy: "same-origin",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("Cross-Origin-Resource-Policy"), "same-origin")
+}
+
+func TestXDNSPreFetchControl(t *testing.T) {
+	s := New(Options{
+		XDNSPrefetchControl: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-DNS-Prefetch-Control"), "on")
+
+	k := New(Options{
+		XDNSPrefetchControl: false,
+	})
+
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, "/bar", nil)
+
+	k.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-DNS-Prefetch-Control"), "off")
+}
+
+func TestXPermittedCrossDomainPolicies(t *testing.T) {
+	s := New(Options{
+		XPermittedCrossDomainPolicies: "none",
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusOK)
+	expect(t, res.Header().Get("X-Permitted-Cross-Domain-Policies"), "none")
+}
+
 func TestIsSSL(t *testing.T) {
 	s := New(Options{
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
