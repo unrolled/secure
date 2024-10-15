@@ -11,25 +11,28 @@ import (
 type secureCtxKey string
 
 const (
-	stsHeader               = "Strict-Transport-Security"
-	stsSubdomainString      = "; includeSubDomains"
-	stsPreloadString        = "; preload"
-	frameOptionsHeader      = "X-Frame-Options"
-	frameOptionsValue       = "DENY"
-	contentTypeHeader       = "X-Content-Type-Options"
-	contentTypeValue        = "nosniff"
-	xssProtectionHeader     = "X-XSS-Protection"
-	xssProtectionValue      = "1; mode=block"
-	cspHeader               = "Content-Security-Policy"
-	cspReportOnlyHeader     = "Content-Security-Policy-Report-Only"
-	hpkpHeader              = "Public-Key-Pins"
-	referrerPolicyHeader    = "Referrer-Policy"
-	featurePolicyHeader     = "Feature-Policy"
-	permissionsPolicyHeader = "Permissions-Policy"
-	coopHeader              = "Cross-Origin-Opener-Policy"
-
-	ctxDefaultSecureHeaderKey = secureCtxKey("SecureResponseHeader")
-	cspNonceSize              = 16
+	stsHeader                    = "Strict-Transport-Security"
+	stsSubdomainString           = "; includeSubDomains"
+	stsPreloadString             = "; preload"
+	frameOptionsHeader           = "X-Frame-Options"
+	frameOptionsValue            = "DENY"
+	contentTypeHeader            = "X-Content-Type-Options"
+	contentTypeValue             = "nosniff"
+	xssProtectionHeader          = "X-XSS-Protection"
+	xssProtectionValue           = "1; mode=block"
+	cspHeader                    = "Content-Security-Policy"
+	cspReportOnlyHeader          = "Content-Security-Policy-Report-Only"
+	hpkpHeader                   = "Public-Key-Pins"
+	referrerPolicyHeader         = "Referrer-Policy"
+	featurePolicyHeader          = "Feature-Policy"
+	permissionsPolicyHeader      = "Permissions-Policy"
+	coopHeader                   = "Cross-Origin-Opener-Policy"
+	coepHeader                   = "Cross-Origin-Embedder-Policy"
+	corpHeader                   = "Cross-Origin-Resource-Policy"
+	dnsPreFetchControlHeader     = "X-DNS-Prefetch-Control"
+	permittedCrossDomainPolicies = "X-Permitted-Cross-Domain-Policies"
+	ctxDefaultSecureHeaderKey    = secureCtxKey("SecureResponseHeader")
+	cspNonceSize                 = 16
 )
 
 // SSLHostFunc is a custom function type that can be used to dynamically set the SSL host of a request.
@@ -91,6 +94,18 @@ type Options struct {
 	// CrossOriginOpenerPolicy allows you to ensure a top-level document does not share a browsing context group with cross-origin documents. Default is "".
 	// Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy
 	CrossOriginOpenerPolicy string
+	// CrossOriginResourcePolicy header blocks others from loading your resources cross-origin in some cases.
+	// Reference https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy
+	CrossOriginResourcePolicy string
+	// CrossOriginEmbedderPolicy header helps control what resources can be loaded cross-origin.
+	// Reference https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy
+	CrossOriginEmbedderPolicy string
+	// XDNSPrefetchControl header helps control DNS prefetching, which can improve user privacy at the expense of performance.
+	// Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-DNS-Prefetch-Control
+	XDNSPrefetchControl bool
+	// XPermittedCrossDomainPolicies header tells some clients (mostly Adobe products) your domain's policy for loading cross-domain content.
+	// Reference: https://owasp.org/www-project-secure-headers/
+	XPermittedCrossDomainPolicies string
 	// SSLHost is the host name that is used to redirect http requests to https. Default is "", which indicates to use the same host.
 	SSLHost string
 	// AllowedHosts is a slice of fully qualified domain names that are allowed. Default is an empty slice, which allows any and all host names.
@@ -464,6 +479,28 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	// Cross Origin Opener Policy header.
 	if len(s.opt.CrossOriginOpenerPolicy) > 0 {
 		responseHeader.Set(coopHeader, s.opt.CrossOriginOpenerPolicy)
+	}
+
+	// Cross Origin Resource Policy header.
+	if len(s.opt.CrossOriginResourcePolicy) > 0 {
+		responseHeader.Set(corpHeader, s.opt.CrossOriginResourcePolicy)
+	}
+
+	// Cross-Origin-Embedder-Policy header.
+	if len(s.opt.CrossOriginEmbedderPolicy) > 0 {
+		responseHeader.Set(coepHeader, s.opt.CrossOriginEmbedderPolicy)
+	}
+
+	// X-DNS-Prefetch-Control header.
+	if s.opt.XDNSPrefetchControl {
+		responseHeader.Set(dnsPreFetchControlHeader, "on")
+	} else {
+		responseHeader.Set(dnsPreFetchControlHeader, "off")
+	}
+
+	// X-Permitted-Cross-Domain-Policies header.
+	if len(s.opt.XPermittedCrossDomainPolicies) > 0 {
+		responseHeader.Set(permittedCrossDomainPolicies, s.opt.XPermittedCrossDomainPolicies)
 	}
 
 	return responseHeader, r, nil
