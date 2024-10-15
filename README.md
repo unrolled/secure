@@ -1,4 +1,4 @@
-# Secure [![GoDoc](https://godoc.org/github.com/unrolled/secure?status.svg)](http://godoc.org/github.com/unrolled/secure) [![Test](https://github.com/unrolled/secure/workflows/tests/badge.svg?branch=v1)](https://github.com/unrolled/secure/actions)
+# Secure [![GoDoc](https://pkg.go.dev/badge/github.com/unrolled/secure)](http://godoc.org/github.com/unrolled/secure) [![Test](https://github.com/unrolled/secure/actions/workflows/test.yaml/badge.svg)](https://github.com/unrolled/secure/actions)
 
 Secure is an HTTP middleware for Go that facilitates some quick security wins. It's a standard net/http [Handler](http://golang.org/pkg/net/http/#Handler), and can be used with many [frameworks](#integration-examples) or directly with Go's net/http package.
 
