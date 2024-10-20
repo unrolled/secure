@@ -492,13 +492,11 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	// X-DNS-Prefetch-Control header.
-	if len(s.opt.XDNSPrefetchControl) > 0 {
-		switch strings.ToLower(s.opt.XDNSPrefetchControl) {
-		case "on":
-			responseHeader.Set(dnsPreFetchControlHeader, "on")
-		case "off":
-			responseHeader.Set(dnsPreFetchControlHeader, "off")
-		}
+	switch strings.ToLower(s.opt.XDNSPrefetchControl) {
+	case "on":
+		responseHeader.Set(dnsPreFetchControlHeader, "on")
+	case "off":
+		responseHeader.Set(dnsPreFetchControlHeader, "off")
 	}
 
 	// X-Permitted-Cross-Domain-Policies header.
