@@ -1076,7 +1076,7 @@ func TestCrossOriginResourcePolicy(t *testing.T) {
 
 func TestXDNSPreFetchControl(t *testing.T) {
 	s := New(Options{
-		XDNSPrefetchControl: true,
+		XDNSPrefetchControl: "on",
 	})
 
 	res := httptest.NewRecorder()
@@ -1088,7 +1088,7 @@ func TestXDNSPreFetchControl(t *testing.T) {
 	expect(t, res.Header().Get("X-DNS-Prefetch-Control"), "on")
 
 	k := New(Options{
-		XDNSPrefetchControl: false,
+		XDNSPrefetchControl: "off",
 	})
 
 	res = httptest.NewRecorder()

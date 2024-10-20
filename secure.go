@@ -102,7 +102,7 @@ type Options struct {
 	CrossOriginEmbedderPolicy string
 	// XDNSPrefetchControl header helps control DNS prefetching, which can improve user privacy at the expense of performance.
 	// Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-DNS-Prefetch-Control
-	XDNSPrefetchControl bool
+	XDNSPrefetchControl string
 	// XPermittedCrossDomainPolicies header tells some clients (mostly Adobe products) your domain's policy for loading cross-domain content.
 	// Reference: https://owasp.org/www-project-secure-headers/
 	XPermittedCrossDomainPolicies string
@@ -492,10 +492,13 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 	}
 
 	// X-DNS-Prefetch-Control header.
-	if s.opt.XDNSPrefetchControl {
-		responseHeader.Set(dnsPreFetchControlHeader, "on")
-	} else {
-		responseHeader.Set(dnsPreFetchControlHeader, "off")
+	if len(s.opt.XDNSPrefetchControl) > 0 {
+		switch strings.ToLower(s.opt.XDNSPrefetchControl) {
+		case "on":
+			responseHeader.Set(dnsPreFetchControlHeader, "on")
+		case "off":
+			responseHeader.Set(dnsPreFetchControlHeader, "off")
+		}
 	}
 
 	// X-Permitted-Cross-Domain-Policies header.
