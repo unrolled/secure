@@ -84,7 +84,10 @@ s := secure.New(secure.Options{
     FeaturePolicy: "vibrate 'none';", // Deprecated: this header has been renamed to PermissionsPolicy. FeaturePolicy allows the Feature-Policy header with the value to be set with a custom value. Default is "".
     PermissionsPolicy: "fullscreen=(), geolocation=()", // PermissionsPolicy allows the Permissions-Policy header with the value to be set with a custom value. Default is "".
     CrossOriginOpenerPolicy: "same-origin", // CrossOriginOpenerPolicy allows the Cross-Origin-Opener-Policy header with the value to be set with a custom value. Default is "".
-
+    CrossOriginEmbedderPolicy: "require-corp", // CrossOriginEmbedderPolicy allows the Cross-Origin-Embedder-Policy header with the value to be set with a custom value. Default is "". 
+    CrossOriginResourcePolicy: "same-origin", // CrossOriginResourcePolicy allows the Cross-Origin-Resource-Policy header with the value to be set with a custom value. Default is "".  
+    XDNSPrefetchControl: "on", // XDNSPrefetchControl allows the X-DNS-Prefetch-Control header to be set via "on" or "off" keyword. Default is "". 
+    XPermittedCrossDomainPolicies: "none", // XPermittedCrossDomainPolicies allows the X-Permitted-Cross-Domain-Policies to be set with a custom value. Default is "".
     IsDevelopment: true, // This will cause the AllowedHosts, SSLRedirect, and STSSeconds/STSIncludeSubdomains options to be ignored during development. When deploying to production, be sure to set this to false.
 })
 // ...
@@ -121,6 +124,10 @@ l := secure.New(secure.Options{
     FeaturePolicy: "",
     PermissionsPolicy: "",
     CrossOriginOpenerPolicy: "",
+    CrossOriginEmbedderPolicy: "",
+    CrossOriginResourcePolicy: "",
+    XDNSPrefetchControl: "",
+    XPermittedCrossDomainPolicies: "",
     IsDevelopment: false,
 })
 ~~~
