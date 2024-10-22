@@ -22,6 +22,18 @@ var myHandler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("bar"))
 })
 
+func TestNoConfigOnlyOneHeader(t *testing.T) {
+	s := New()
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://example.com/foo", nil)
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, len(res.Header()), 1)
+	expect(t, strings.Contains(res.Header().Get("Content-Type"), "text/plain"), true)
+}
+
 func TestNoConfig(t *testing.T) {
 	s := New()
 
