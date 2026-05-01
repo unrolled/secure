@@ -319,9 +319,10 @@ func TestBasicSSLWithHostFunc(t *testing.T) {
 	sslHostFunc := (func() SSLHostFunc {
 		return func(host string) string {
 			newHost := ""
-			if host == exampleHost {
+			switch host {
+			case exampleHost:
 				newHost = "secure.example.com:8443"
-			} else if host == "www.example.org" {
+			case "www.example.org":
 				newHost = "secure.example.org"
 			}
 
