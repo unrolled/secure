@@ -156,10 +156,7 @@ func New(options ...Options) *Secure {
 		o = options[0]
 	}
 
-	o.ContentSecurityPolicy = strings.ReplaceAll(o.ContentSecurityPolicy, "$NONCE", "'nonce-%[1]s'")
-	o.ContentSecurityPolicyReportOnly = strings.ReplaceAll(o.ContentSecurityPolicyReportOnly, "$NONCE", "'nonce-%[1]s'")
-
-	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "%[1]s") || strings.Contains(o.ContentSecurityPolicyReportOnly, "%[1]s")
+	o.nonceEnabled = strings.Contains(o.ContentSecurityPolicy, "$NONCE") || strings.Contains(o.ContentSecurityPolicyReportOnly, "$NONCE")
 
 	s := &Secure{
 		opt:               o,
@@ -445,20 +442,12 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 	// Content Security Policy header.
 	if len(s.opt.ContentSecurityPolicy) > 0 {
-		if s.opt.nonceEnabled {
-			responseHeader.Set(cspHeader, fmt.Sprintf(s.opt.ContentSecurityPolicy, CSPNonce(r.Context())))
-		} else {
-			responseHeader.Set(cspHeader, s.opt.ContentSecurityPolicy)
-		}
+		responseHeader.Set(cspHeader, strings.ReplaceAll(s.opt.ContentSecurityPolicy, "$NONCE", "'nonce-"+CSPNonce(r.Context())+"'"))
 	}
 
 	// Content Security Policy Report Only header.
 	if len(s.opt.ContentSecurityPolicyReportOnly) > 0 {
-		if s.opt.nonceEnabled {
-			responseHeader.Set(cspReportOnlyHeader, fmt.Sprintf(s.opt.ContentSecurityPolicyReportOnly, CSPNonce(r.Context())))
-		} else {
-			responseHeader.Set(cspReportOnlyHeader, s.opt.ContentSecurityPolicyReportOnly)
-		}
+		responseHeader.Set(cspReportOnlyHeader, strings.ReplaceAll(s.opt.ContentSecurityPolicyReportOnly, "$NONCE", "'nonce-"+CSPNonce(r.Context())+"'"))
 	}
 
 	// Referrer Policy header.
