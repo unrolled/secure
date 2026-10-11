@@ -298,6 +298,45 @@ func TestBasicSSL(t *testing.T) {
 	expect(t, res.Header().Get("Location"), "https://www.example.com/foo")
 }
 
+func TestSSLRedirectLeavesRequestURL(t *testing.T) {
+	s := New(Options{
+		SSLRedirect: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo?x=1", nil)
+	req.Host = exampleHost
+	req.URL.Scheme = httpSchema
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://www.example.com/foo?x=1")
+	expect(t, req.URL.Scheme, httpSchema)
+	expect(t, req.URL.Host, "")
+	expect(t, req.URL.RawQuery, "x=1")
+}
+
+func TestSSLForceHostLeavesRequestURL(t *testing.T) {
+	s := New(Options{
+		SSLHost:      "secure.example.com",
+		SSLForceHost: true,
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo?x=1", nil)
+	req.Host = exampleHost
+	req.URL.Scheme = httpsSchema
+
+	s.Handler(myHandler).ServeHTTP(res, req)
+
+	expect(t, res.Code, http.StatusMovedPermanently)
+	expect(t, res.Header().Get("Location"), "https://secure.example.com/foo?x=1")
+	expect(t, req.URL.Scheme, httpsSchema)
+	expect(t, req.URL.Host, "")
+	expect(t, req.URL.RawQuery, "x=1")
+}
+
 func TestBasicSSLWithHost(t *testing.T) {
 	s := New(Options{
 		SSLRedirect: true,

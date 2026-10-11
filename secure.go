@@ -347,7 +347,8 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 	// SSL check.
 	if s.opt.SSLRedirect && !ssl && !s.opt.IsDevelopment {
-		url := r.URL
+		// Copy the URL. Writing through r.URL would change the caller's request.
+		url := *r.URL
 		url.Scheme = "https"
 		url.Host = host
 
@@ -381,7 +382,8 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 		}
 
 		if tempSSLHost != host {
-			url := r.URL
+			// Copy the URL. Writing through r.URL would change the caller's request.
+			url := *r.URL
 			url.Scheme = "https"
 			url.Host = tempSSLHost
 
