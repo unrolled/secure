@@ -1,6 +1,7 @@
 package secure
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -259,11 +260,70 @@ func TestSSL(t *testing.T) {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 	req.Host = exampleHost
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
 	expect(t, res.Code, http.StatusOK)
+}
+
+func TestSSLRedirectRequestTarget(t *testing.T) {
+	cases := []struct {
+		name       string
+		target     string
+		tls        bool
+		proxy      bool
+		forwarded  string
+		wantStatus int
+	}{
+		{"origin form", "/protected?x=1", false, false, "", http.StatusMovedPermanently},
+		{"absolute HTTP", "http://example.test/protected?x=1", false, false, "", http.StatusMovedPermanently},
+		{"absolute HTTPS", "https://example.test/protected?x=1", false, false, "", http.StatusMovedPermanently},
+		{"absolute mixed case HTTPS", "hTtPs://example.test/protected?x=1", false, false, "", http.StatusMovedPermanently},
+		{"unconfigured proxy header", "https://example.test/protected?x=1", false, false, "https", http.StatusMovedPermanently},
+		{"missing proxy header", "https://example.test/protected?x=1", false, true, "", http.StatusMovedPermanently},
+		{"HTTP proxy header", "https://example.test/protected?x=1", false, true, "http", http.StatusMovedPermanently},
+		{"HTTPS proxy header", "https://example.test/protected?x=1", false, true, "https", http.StatusOK},
+		{"TLS origin form", "/protected?x=1", true, false, "", http.StatusOK},
+		{"TLS absolute HTTP", "http://example.test/protected?x=1", true, false, "", http.StatusOK},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// Parse the client-controlled request target without inferring TLS from its scheme.
+			req, err := http.ReadRequest(bufio.NewReader(strings.NewReader(
+				"GET " + c.target + " HTTP/1.1\r\nHost: example.test\r\n\r\n")))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = req.Body.Close() }()
+
+			if c.tls {
+				req.TLS = &tls.ConnectionState{}
+			}
+			req.Header.Set("X-Forwarded-Proto", c.forwarded)
+
+			options := Options{SSLRedirect: true}
+			if c.proxy {
+				options.SSLProxyHeaders = map[string]string{"X-Forwarded-Proto": "https"}
+			}
+
+			called := false
+			handler := New(options).Handler(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+				called = true
+			}))
+			res := httptest.NewRecorder()
+			handler.ServeHTTP(res, req)
+
+			expect(t, res.Code, c.wantStatus)
+			expect(t, called, c.wantStatus == http.StatusOK)
+			location := ""
+			if c.wantStatus == http.StatusMovedPermanently {
+				location = "https://example.test/protected?x=1"
+			}
+			expect(t, res.Header().Get("Location"), location)
+		})
+	}
 }
 
 func TestSSLInDevMode(t *testing.T) {
@@ -599,7 +659,7 @@ func TestStsHeaderInDevMode(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -615,7 +675,7 @@ func TestStsHeaderWithSubdomains(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -631,7 +691,7 @@ func TestStsHeaderWithSubdomainsForRequestOnly(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
 
@@ -647,7 +707,7 @@ func TestStsHeaderWithPreload(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -663,7 +723,7 @@ func TestStsHeaderWithPreloadForRequest(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
 
@@ -680,7 +740,7 @@ func TestStsHeaderWithSubdomainsWithPreload(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.Handler(myHandler).ServeHTTP(res, req)
 
@@ -697,7 +757,7 @@ func TestStsHeaderWithSubdomainsWithPreloadForRequestOnly(t *testing.T) {
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
-	req.URL.Scheme = httpsSchema
+	req.TLS = &tls.ConnectionState{}
 
 	s.HandlerForRequestOnly(myHandler).ServeHTTP(res, req)
 
@@ -1143,7 +1203,7 @@ func TestIsSSL(t *testing.T) {
 
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 	req.URL.Scheme = httpsSchema
-	expect(t, s.isSSL(req), true)
+	expect(t, s.isSSL(req), false)
 
 	req, _ = http.NewRequestWithContext(context.Background(), http.MethodGet, "/foo", nil)
 	req.Header.Add("X-Forwarded-Proto", "https")

@@ -120,6 +120,7 @@ type Options struct {
 	// If SSLHostFunc is nil, the `SSLHost` option will be used.
 	SSLHostFunc *SSLHostFunc `json:"-" toml:"-" yaml:"-"`
 	// SSLProxyHeaders is set of header keys with associated values that would indicate a valid https request. Useful when using Nginx: `map[string]string{"X-Forwarded-Proto": "https"}`. Default is blank map.
+	// Only configure headers that a trusted reverse proxy sets or overwrites, and prevent clients from accessing the backend directly.
 	SSLProxyHeaders map[string]string
 	// STSSeconds is the max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.
 	STSSeconds int64
@@ -498,7 +499,8 @@ func (s *Secure) processRequest(w http.ResponseWriter, r *http.Request) (http.He
 
 // isSSL determine if we are on HTTPS.
 func (s *Secure) isSSL(r *http.Request) bool {
-	ssl := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
+	// The request URL's scheme can be supplied by a client over plaintext HTTP.
+	ssl := r.TLS != nil
 	if !ssl {
 		for k, v := range s.opt.SSLProxyHeaders {
 			if r.Header.Get(k) == v {
