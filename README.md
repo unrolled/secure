@@ -184,6 +184,8 @@ func main() {
 }
 ~~~
 
+HTTPS detection uses the request's TLS state or explicitly configured `SSLProxyHeaders`. The request URL's scheme is not evidence of TLS. When TLS terminates at a reverse proxy, configure only headers that the trusted proxy sets or overwrites, and prevent clients from accessing the backend directly.
+
 ### Strict Transport Security
 The STS header will only be sent on verified HTTPS connections (and when `IsDevelopment` is false). Be sure to set the `SSLProxyHeaders` option if your application is behind a proxy to ensure the proper behavior. If you need the STS header for all HTTP and HTTPS requests (which you [shouldn't](http://tools.ietf.org/html/rfc6797#section-7.2)), you can use the `ForceSTSHeader` option. Note that if `IsDevelopment` is true, it will still disable this header even when `ForceSTSHeader` is set to true.
 
